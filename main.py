@@ -22,14 +22,14 @@ def start_trading():
     while True:
         if utils.is_market_open():
             now = datetime.now()
-            # if now.minute % 5 == 0 and now.second == 2:
-            if utils.is_symbol_in_holdings_or_position():
-                op.exit()
-                candle_details.append(strategy.get_scanning_result())
-            else:
-                candle_details.append(op.enter())
-            pd.DataFrame(candle_details).to_csv(candle_csv_name, index=False)
-            time.sleep(2)
+            if now.minute % 5 == 0 and now.second == 2:
+                if utils.is_symbol_in_holdings_or_position():
+                    op.exit()
+                    candle_details.append(strategy.get_scanning_result())
+                else:
+                    candle_details.append(op.enter())
+                pd.DataFrame(candle_details).to_csv(candle_csv_name, index=False)
+                time.sleep(2)
         else:
             print(
                 f"Current Time: {datetime.now()} ******* Market is closed now....",
