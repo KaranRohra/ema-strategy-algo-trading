@@ -30,14 +30,6 @@ TRADE_P_AND_L = "P&L"
 TRADE_STOPLOSS = "Stoploss"
 
 
-# ENV Constants Name
-KITE_API_KEY = "KITE_API_KEY"
-DHAN_ACCESS_TOKEN = "DHAN_ACCESS_TOKEN"
-DHAN_CLIENT_ID = "DHAN_CLIENT_ID"
-ANGEL_ONE_API_KEY = "ANGEL_ONE_API_KEY"
-ANGEL_ONE_SECRET_KEY = "ANGEL_ONE_SECRET_KEY"
-
-
 # Broker Connect Objects
-kite = KiteConnect(api_key=f"enctoken {os.environ[KITE_API_KEY]}")
-dhan = dhanhq(os.environ[DHAN_ACCESS_TOKEN], os.environ[DHAN_CLIENT_ID])
+kite = KiteConnect(api_key=f"enctoken {os.environ['KITE_API_KEY']}")
+dhan = dhanhq(os.environ["DHAN_CLIENT_ID"], os.environ["DHAN_ACCESS_TOKEN"])
