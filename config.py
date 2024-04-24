@@ -1,0 +1,5 @@
+from constants import *
+
+SYMBOL = "BANKNIFTY24MAYFUT"
+EXCHANGE = kite.EXCHANGE_NFO
+RISK_AMOUNT = 100
