@@ -34,5 +34,5 @@ TRADE_STOPLOSS = "Stoploss"
 
 
 # Broker Connect Objects
-kite = KiteConnect(api_key=f"enctoken {os.environ['KITE_API_KEY']}")
-dhan = dhanhq(os.environ["DHAN_CLIENT_ID"], os.environ["DHAN_ACCESS_TOKEN"])
+kite = KiteConnect(api_key=f"enctoken {os.getenv('KITE_API_KEY')}")
+dhan = dhanhq(os.getenv("DHAN_CLIENT_ID"), os.getenv("DHAN_ACCESS_TOKEN"))
