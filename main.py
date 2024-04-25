@@ -22,11 +22,12 @@ def start_trading():
         and pd.read_csv(candle_csv_name).to_dict(orient="records")
         or []
     )
-
+    marketOpen = 1
     while utils.is_trading_time():
         now = datetime.now()
-        if now.hour == 9 and now.minute == 15 and now.second == 0:
+        if marketOpen == 1:
             print("Market opened")
+            marketOpen = 0
         if utils.is_market_open():
             if now.minute % 5 == 0 and now.second == 2:
                 if utils.is_symbol_in_holdings_or_position():
