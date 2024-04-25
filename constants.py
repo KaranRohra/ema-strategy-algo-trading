@@ -1,7 +1,10 @@
 import os
 
+from dotenv import load_dotenv
 from kiteconnect import KiteConnect
 from dhanhq import dhanhq
+
+load_dotenv()
 
 # Candle Analysis
 CANDLE_CSV_PATH = "./analysis/candles/"

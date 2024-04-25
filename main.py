@@ -8,6 +8,10 @@ from utils import utils
 from order_placement import order_placement as op
 from strategy import strategy
 
+os.environ["TZ"] = "Asia/Kolkata"
+if os.environ["ENV"] == "PROD":
+    time.tzset()
+
 
 def start_trading():
     candle_csv_name = (
