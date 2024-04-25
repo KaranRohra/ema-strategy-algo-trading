@@ -24,8 +24,10 @@ def start_trading():
     )
 
     while utils.is_trading_time():
+        now = datetime.now()
+        if now.hour == 9 and now.minute == 15 and now.second == 0:
+            print("Market opened")
         if utils.is_market_open():
-            now = datetime.now()
             if now.minute % 5 == 0 and now.second == 2:
                 if utils.is_symbol_in_holdings_or_position():
                     op.exit()
@@ -38,6 +40,7 @@ def start_trading():
         print(
             f"Trading time is from 9:00 AM to 3:30 PM. Current time is {datetime.now().time()}",
         )
+    print("Market closed")
 
 
 if __name__ == "__main__":
