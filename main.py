@@ -23,7 +23,7 @@ def start_trading():
         or []
     )
 
-    while True:
+    while utils.is_trading_time():
         if utils.is_market_open():
             now = datetime.now()
             if now.minute % 5 == 0 and now.second == 2:
@@ -34,11 +34,10 @@ def start_trading():
                     candle_details.append(op.enter())
                 pd.DataFrame(candle_details).to_csv(candle_csv_name, index=False)
                 time.sleep(2)
-        else:
-            print(
-                f"Current Time: {datetime.now()} ******* Market is closed now....",
-                end="\r",
-            )
+    else:
+        print(
+            f"Trading time is from 9:00 AM to 3:30 PM. Current time is {datetime.now().time()}",
+        )
 
 
 if __name__ == "__main__":

@@ -13,6 +13,12 @@ def is_market_open():
 
     return now >= market_open_time and now <= market_end_time
 
+def is_trading_time():
+    now = datetime.now().time()
+    market_open_time = time(9, 0, 0)
+    market_end_time = time(15, 30, 30)
+
+    return now >= market_open_time and now <= market_end_time
 
 def is_symbol_in_holdings_or_position():
     holdings_df = pd.read_csv(HOLDINGS_CSV_PATH)
