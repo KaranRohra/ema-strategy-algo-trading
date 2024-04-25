@@ -8,6 +8,7 @@ def enter():
     holdings = {}
     holdings[HOLDING_SYMBOL] = SYMBOL
     holdings[HOLDING_ENTRY_DATETIME] = datetime.now()
+    holdings[HOLDING_STOPLOSS] = get_stoploss()
 
     entry_status = None
     scanning_result = get_scanning_result()
@@ -26,7 +27,6 @@ def enter():
     if entry_status:
         pd.DataFrame(data=[holdings]).to_csv(HOLDINGS_CSV_PATH, index=False)
 
-    holdings[HOLDING_STOPLOSS] = get_stoploss()
     scanning_result["status"] = entry_status
     return scanning_result
 
@@ -70,7 +70,7 @@ def exit():
         exit_status = True
 
     if exit_status:
-        pd.DataFrame(columns=columns).to_csv(HOLDINGS_CSV_PATH, index=False)
         pd.concat(
-            [trades_df, pd.DataFrame(exit_details)], ignore_index=True
+            [trades_df, pd.DataFrame(data=[exit_details])], ignore_index=True
         ).reset_index().to_csv(TRADES_CSV_PATH, index=False)
+        pd.DataFrame(data=[], columns=columns).to_csv(HOLDINGS_CSV_PATH, index=False)
