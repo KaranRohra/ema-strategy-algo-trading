@@ -4,3 +4,4 @@ dhanhq
 pytrendseries
 websockets
 ta
+python-dotenv
