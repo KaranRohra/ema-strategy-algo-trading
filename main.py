@@ -39,7 +39,7 @@ def start_trading():
                 time.sleep(2)
     else:
         print(
-            f"Trading time is from 9:00 AM to 3:30 PM. Current time is {datetime.now().time()}",
+            f"Trading time is from 9:00 to 15:30. Current time is {datetime.now().time()}",
         )
     print("Market closed")
 
