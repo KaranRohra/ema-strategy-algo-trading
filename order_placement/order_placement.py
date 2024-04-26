@@ -14,13 +14,13 @@ def enter():
     scanning_result = get_scanning_result()
 
     if scanning_result["is_close_gt_ema"] and scanning_result["is_in_uptrend"]:
-        holdings[HOLDING_ENTRY_PRICE] = get_entry(dhan.BUY)
-        holdings[HOLDING_TRANSACTION_TYPE] = dhan.BUY
+        holdings[HOLDING_ENTRY_PRICE] = get_entry(kite.TRANSACTION_TYPE_BUY)
+        holdings[HOLDING_TRANSACTION_TYPE] = kite.TRANSACTION_TYPE_BUY
 
         entry_status = "Long Position Entered."
     elif scanning_result["is_close_lt_ema"] and scanning_result["is_in_downtrend"]:
-        holdings[HOLDING_ENTRY_PRICE] = get_entry(dhan.SELL)
-        holdings[HOLDING_TRANSACTION_TYPE] = dhan.SELL
+        holdings[HOLDING_ENTRY_PRICE] = get_entry(kite.TRANSACTION_TYPE_SELL)
+        holdings[HOLDING_TRANSACTION_TYPE] = kite.TRANSACTION_TYPE_SELL
 
         entry_status = "Short Position Entered."
 
@@ -53,7 +53,7 @@ def exit():
     trades_df = pd.read_csv(TRADES_CSV_PATH)
     exit_status = None
 
-    if holdings[HOLDING_TRANSACTION_TYPE] == dhan.BUY and is_close_crossed_ema200(
+    if holdings[HOLDING_TRANSACTION_TYPE] == kite.TRANSACTION_TYPE_BUY and is_close_crossed_ema200(
         dir="lt"
     ):
         exit_details[TRADE_P_AND_L] = (
@@ -61,7 +61,7 @@ def exit():
         )
         exit_status = True
 
-    elif holdings[HOLDING_TRANSACTION_TYPE] == dhan.SELL and is_close_crossed_ema200(
+    elif holdings[HOLDING_TRANSACTION_TYPE] == kite.TRANSACTION_TYPE_SELL and is_close_crossed_ema200(
         dir="gt"
     ):
         exit_details[TRADE_P_AND_L] = (

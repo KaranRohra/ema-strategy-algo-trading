@@ -59,11 +59,11 @@ def get_stoploss():
     )
 
 
-def get_entry(transaction_type=dhan.BUY):
+def get_entry(transaction_type=kite.TRANSACTION_TYPE_BUY):
     historical_data = get_historical_data()[-1]
     return (
         historical_data["high"]
-        if transaction_type == dhan.BUY
+        if transaction_type == kite.TRANSACTION_TYPE_BUY
         else historical_data["low"]  # SELL
     )
 

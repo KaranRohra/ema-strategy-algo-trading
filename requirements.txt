@@ -1,6 +1,5 @@
 kiteconnect
 pandas
-dhanhq
 pytrendseries
 websockets
 ta

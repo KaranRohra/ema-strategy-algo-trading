@@ -25,10 +25,10 @@ def start_trading():
     marketOpen = 1
     while utils.is_trading_time():
         now = datetime.now()
-        if marketOpen == 1:
-            print("Market opened")
-            marketOpen = 0
         if utils.is_market_open():
+            if marketOpen == 1:
+                print("Market opened")
+                marketOpen = 0
             if now.minute % 5 == 0 and now.second == 2:
                 if utils.is_symbol_in_holdings_or_position():
                     op.exit()
