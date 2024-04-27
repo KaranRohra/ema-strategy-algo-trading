@@ -1,6 +1,5 @@
 kiteconnect
 pandas
 pytrendseries
-websockets
 ta
 python-dotenv
