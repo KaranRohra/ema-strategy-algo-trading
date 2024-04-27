@@ -1,47 +1,11 @@
-import pandas as pd
 import time
 import os
+from strategy.start_trading import start_trading
 
-import constants
-from datetime import datetime
-from utils import utils
-from order_placement import order_placement as op
-from strategy import strategy
 
 os.environ["TZ"] = "Asia/Kolkata"
 if os.environ["ENV"] == "PROD":
     time.tzset()
-
-
-def start_trading():
-    candle_csv_name = (
-        constants.CANDLE_CSV_PATH + (datetime.now()).strftime("%d-%m-%Y") + ".csv"
-    )
-    candle_details = (
-        os.path.exists(candle_csv_name)
-        and pd.read_csv(candle_csv_name).to_dict(orient="records")
-        or []
-    )
-    marketOpen = 1
-    while utils.is_trading_time():
-        now = datetime.now()
-        if utils.is_market_open():
-            if marketOpen == 1:
-                print("Market opened")
-                marketOpen = 0
-            if now.minute % 5 == 0 and now.second == 2:
-                if utils.is_symbol_in_holdings_or_position():
-                    op.exit()
-                    candle_details.append(strategy.get_scanning_result())
-                else:
-                    candle_details.append(op.enter())
-                pd.DataFrame(candle_details).to_csv(candle_csv_name, index=False)
-                time.sleep(2)
-    else:
-        print(
-            f"Trading time is from 9:00 to 15:30. Current time is {datetime.now().time()}",
-        )
-    print("Market closed")
 
 
 if __name__ == "__main__":

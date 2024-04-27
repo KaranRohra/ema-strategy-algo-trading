@@ -1,8 +1,6 @@
 import math
-import pandas as pd
+import os
 
-from constants import *
-from config import *
 from datetime import datetime, time
 
 
@@ -22,13 +20,9 @@ def is_trading_time():
     return now >= market_open_time and now <= market_end_time
 
 
-def is_symbol_in_holdings_or_position():
-    holdings_df = pd.read_csv(HOLDINGS_CSV_PATH)
-    return holdings_df.size and SYMBOL in holdings_df[HOLDING_SYMBOL].values
-
-
 def get_qty(entry, stoploss, available_capital):
-    qty = math.abs(RISK_AMOUNT // (entry - stoploss))
+    risk_amount = os.environ.get("RISK_AMOUNT", 1000)
+    qty = math.abs(risk_amount // (entry - stoploss))
     required_capital = qty * entry
 
     if required_capital >= available_capital:
