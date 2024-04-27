@@ -7,7 +7,7 @@ from datetime import datetime as dt
 load_dotenv()
 
 # Candle Analysis
-CANDLE_CSV_PATH = f"./analysis/candles/{dt.now().strftime("%d-%m-%Y")}.csv"
+CANDLE_CSV_PATH = f"./analysis/candles/{dt.now().strftime('%d-%m-%Y')}.csv"
 
 
 # Holdings CSV Columns
