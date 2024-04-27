@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import utils
+import time
 
 from dotenv import load_dotenv
 from constants import CANDLE_CSV_PATH, Holding, Trade
@@ -58,12 +59,13 @@ def start_trading():
     symbol = os.environ["SYMBOL"]
     exchange = os.environ["EXCHANGE"]
 
-    while utils.is_trading_time():
-
-        if not utils.is_market_open():
+    while utils.get_market_status()["open"]:
+        if not utils.is_trading_time():
             continue
 
         now = dt.now()
+
+        # Run for every 5 minute (5 minute candle)
         if now.minute % 5 == 0 and now.second == 0:
             if kite_utils.is_symbol_in_holdings_or_position(symbol):
                 exit_details = orders.exit_order(exchange, symbol)
@@ -76,5 +78,6 @@ def start_trading():
 
             dump_candle_data(exchange, symbol)
             print(now.strftime("%Y-%m-%d %H:%M:%S") + " - Candle data dumped...")
+            time.sleep(1)
     else:
-        print("Trading time is between 9:15 AM to 3:30 PM. Exiting...")
+        print("Market is closed due to: " + utils.get_market_status()["reason"])
