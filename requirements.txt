@@ -2,3 +2,4 @@ pytrendseries
 kiteconnect
 ta
 python-dotenv
+pymongo
