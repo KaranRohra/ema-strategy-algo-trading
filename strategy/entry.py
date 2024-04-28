@@ -4,6 +4,7 @@ import ta.trend
 
 from constants import Signal
 from kite_utils import kite_utils
+from datetime import datetime as dt
 
 
 def get_trend_analysis(price, trend):
@@ -34,7 +35,8 @@ def get_ema5_and_ema20_analysis(ema5, ema20, trend):
     return ema5_and_ema20_analysis
 
 
-def get_analyzed_params(close) -> dict:
+def get_analyzed_params(exchange, symbol) -> dict:
+    close = [h["close"] for h in kite_utils.get_historical_data(exchange, symbol)]
     close_series = pd.Series(close)
     ema5 = ta.trend.ema_indicator(close=close_series, window=5).to_list()
     ema20 = ta.trend.ema_indicator(close=close_series, window=20).to_list()
@@ -43,6 +45,9 @@ def get_analyzed_params(close) -> dict:
     ema200 = ta.trend.ema_indicator(close=close_series, window=200).to_list()
 
     return {
+        "symbol": symbol,
+        "exchange": exchange,
+        "datetime": dt.now(),
         "close_above_emas": close[-1] > ema20[-1] > ema50[-1] > ema100[-1] > ema200[-1],
         **get_ema5_and_ema20_analysis(ema5, ema20, "uptrend"),
         "close_below_emas": close[-1] < ema20[-1] < ema50[-1] < ema100[-1] < ema200[-1],
@@ -51,8 +56,7 @@ def get_analyzed_params(close) -> dict:
 
 
 def entry_signal(exchange, symbol) -> Signal:
-    close = [h["close"] for h in kite_utils.get_historical_data(exchange, symbol)]
-    analyzed_params = get_analyzed_params(close)
+    analyzed_params = get_analyzed_params(exchange, symbol)
 
     if (
         analyzed_params["close_above_emas"]

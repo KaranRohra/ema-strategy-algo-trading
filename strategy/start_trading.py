@@ -1,58 +1,35 @@
 import os
-import pandas as pd
 import utils
 import time
 
 from dotenv import load_dotenv
-from constants import CANDLE_CSV_PATH, Holding, Trade
+from constants import Holding, Trade
 from strategy.entry import get_analyzed_params
 from orders import orders
 from kite_utils import kite_utils
 from datetime import datetime as dt
+from db import mongodb
 
 
 load_dotenv()
 
 
 def dump_candle_data(exchange, symbol):
-    candle_details = (
-        os.path.exists(CANDLE_CSV_PATH)
-        and pd.read_csv(CANDLE_CSV_PATH).to_dict(orient="records")
-        or []
-    )
-    close = [h["close"] for h in kite_utils.get_historical_data(exchange, symbol)]
-    candle_details.append(get_analyzed_params(close))
-
-    pd.DataFrame(candle_details).to_csv(CANDLE_CSV_PATH, index=False)
+    mongodb.MongoDB.candle_collection.insert_one(get_analyzed_params(exchange, symbol))
 
 
 def dump_holding_data(entry_details):
-    holding_df = pd.read_csv(Holding.CSV_PATH)
-    holding_details = holding_df.to_dict(orient="records")
-    holding_details.append(entry_details)
-    pd.DataFrame(holding_details, columns=holding_df.columns).to_csv(
-        Holding.CSV_PATH, index=False
-    )
+    mongodb.MongoDB.holding_collection.insert_one(entry_details)
 
 
 def dump_trade_data(exit_details):
-    trades_df = pd.read_csv(Trade.CSV_PATH)
-    holding_df = pd.read_csv(Holding.CSV_PATH)
-
-    holding_details = holding_df.to_dict(orient="records")
-    trade_details = trades_df.to_dict(orient="records")
-
-    holding_details = [
-        h for h in holding_details if h[Holding.SYMBOL] != exit_details[Trade.SYMBOL]
-    ]
-    trade_details.append(exit_details)
-
-    pd.DataFrame(trade_details, columns=trades_df.columns).to_csv(
-        Trade.CSV_PATH, index=False
-    )
-    pd.DataFrame(holding_details, columns=holding_df.columns).to_csv(
-        Holding.CSV_PATH, index=False
-    )
+    acknowledged = mongodb.MongoDB.trade_collection.insert_one(
+        exit_details
+    ).acknowledged
+    if acknowledged:
+        mongodb.MongoDB.holding_collection.delete_one(
+            {Holding.SYMBOL: exit_details[Trade.SYMBOL]}
+        )
 
 
 def start_trading():
@@ -67,7 +44,7 @@ def start_trading():
 
         # Run for every 5 minute (5 minute candle)
         if now.minute % 5 == 0 and now.second == 0:
-            if kite_utils.is_symbol_in_holdings_or_position(symbol):
+            if kite_utils.get_holding(symbol):
                 exit_details = orders.exit_order(exchange, symbol)
                 if exit_details:
                     dump_trade_data(exit_details)

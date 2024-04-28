@@ -2,36 +2,30 @@ import os
 
 from dotenv import load_dotenv
 from kiteconnect import KiteConnect
-from datetime import datetime as dt
 
 load_dotenv()
-
-# Candle Analysis
-CANDLE_CSV_PATH = f"./analysis/candles/{dt.now().strftime('%d-%m-%Y')}.csv"
 
 
 # Holdings CSV Columns
 # symbol,entry_datetime,entry,transaction_type,stoploss
 class Holding:
-  CSV_PATH = "./analysis/Holdings.csv"
-  SYMBOL = "Symbol"
-  DATETIME = "Entry Datetime"
-  PRICE = "Price"
-  TRANSACTION_TYPE = "Transaction Type"
-  STOPLOSS = "Stoploss"
+  SYMBOL = "symbol"
+  DATETIME = "entry_datetime"
+  PRICE = "price"
+  TRANSACTION_TYPE = "transaction_type"
+  STOPLOSS = "stoploss"
 
 # Trades CSV Columns
 # symbol,trade_from,trade_to,entry,exit,transaction_type,p&l,stoploss
 class Trade:
-  CSV_PATH = "./analysis/Trades.csv"
-  SYMBOL = "Symbol"
-  FROM = "From"
-  TO = "To"
-  ENTRY_PRICE = "Entry Price"
-  EXIT_PRICE = "Exit Price"
-  TRANSACTION_TYPE = "Transaction Type"
-  P_AND_L = "P&L"
-  STOPLOSS = "Stoploss"
+  SYMBOL = "symbol"
+  FROM = "from"
+  TO = "to"
+  ENTRY_PRICE = "entry_price"
+  EXIT_PRICE = "exit_price"
+  TRANSACTION_TYPE = "transaction_type"
+  P_AND_L = "profit_and_loss"
+  STOPLOSS = "stoploss"
 
 
 # Strategy Constants

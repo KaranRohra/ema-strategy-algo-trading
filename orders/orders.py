@@ -8,7 +8,7 @@ def entry_order(exchange, symbol):
     signal = entry.entry_signal(exchange, symbol)
     exchange_symbol = f"{exchange}:{symbol}"
     ohlc = kite.ohlc([exchange_symbol])[exchange_symbol]["ohlc"]
-    if kite_utils.is_symbol_in_holdings_or_position(symbol):
+    if kite_utils.get_holding(symbol):
         return None
 
     entry_details = {
@@ -34,6 +34,8 @@ def exit_order(exchange, symbol):
 
     holding = kite_utils.get_holding(symbol)
     exchange_symbol = f"{exchange}:{symbol}"
+    if holding is None:
+        return None
 
     exit_details = {
         Trade.SYMBOL: holding[Holding.SYMBOL],

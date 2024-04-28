@@ -1,7 +1,6 @@
-import pandas as pd
-
 from datetime import datetime, timedelta
 from constants import Holding, kite
+from db import mongodb
 
 
 def get_symbol_ltp(exchange, symbol):
@@ -20,13 +19,5 @@ def get_historical_data(exchange, symbol):
     )
 
 
-def is_symbol_in_holdings_or_position(symbol):
-    holdings_df = pd.read_csv(Holding.CSV_PATH)
-    return holdings_df.size and symbol in holdings_df[Holding.SYMBOL].values
-
-
 def get_holding(symbol):
-    holdings = pd.read_csv(Holding.CSV_PATH).to_dict(orient="records")
-    symbol_holding = [h for h in holdings if h[Holding.SYMBOL] == symbol]
-
-    return symbol_holding and symbol_holding[0] or None
+    return mongodb.MongoDB.holding_collection.find_one({Holding.SYMBOL: symbol})
