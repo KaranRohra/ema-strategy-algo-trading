@@ -1,5 +1,4 @@
-kiteconnect
-pandas
 pytrendseries
+kiteconnect
 ta
 python-dotenv
