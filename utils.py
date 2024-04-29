@@ -24,7 +24,7 @@ def get_market_status():
     else:
         reason = f"Market timing is 9:00 AM to 3:30 PM - Current Time: {now.strftime('%Y-%m-%d %H:%M:%S')}"
 
-    return {open: open, reason: reason}
+    return {"open": open, reason: reason}
 
 
 def is_trading_time():
