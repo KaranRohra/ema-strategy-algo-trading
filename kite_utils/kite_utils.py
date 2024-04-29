@@ -20,4 +20,7 @@ def get_historical_data(exchange, symbol):
 
 
 def get_holding(symbol):
-    return mongodb.MongoDB.holding_collection.find_one({Holding.SYMBOL: symbol})
+    if mongodb.MongoDB.holding_cache is None:
+        mongodb.MongoDB.holding_cache = list(mongodb.MongoDB.holding_collection.find())
+    holding = [h for h in mongodb.MongoDB.holding_cache if h[Holding.SYMBOL] == symbol]
+    return holding[0] if len(holding) else None

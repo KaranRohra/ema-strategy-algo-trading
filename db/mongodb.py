@@ -8,3 +8,5 @@ class MongoDB:
     trade_collection = _db["trades"]
     holding_collection = _db["holdings"]
     candle_collection = _db["candles"]
+
+    holding_cache = None
