@@ -1,6 +1,7 @@
 import os
 import utils
 import time
+import heroku
 
 from dotenv import load_dotenv
 from constants import Holding, Trade
@@ -56,6 +57,7 @@ def start_trading():
                     dump_holding_data(entry_details)
             dump_candle_data(get_analyzed_params(exchange, symbol))
             print(now.strftime("%Y-%m-%d %H:%M:%S") + " - Candle data dumped...")
+            heroku.activate_dyno()
             time.sleep(1)
     else:
         print("Market is closed due to: " + utils.get_market_status()["reason"])
