@@ -14,6 +14,10 @@ from db import mongodb
 load_dotenv()
 
 
+def dump_candle_data(candle_data):
+    mongodb.MongoDB.candle_collection.insert_one(candle_data)
+
+
 def dump_holding_data(entry_details):
     mongodb.MongoDB.holding_cache = None
     mongodb.MongoDB.holding_collection.insert_one(entry_details)
@@ -33,30 +37,25 @@ def dump_trade_data(exit_details):
 def start_trading():
     symbol = os.environ["SYMBOL"]
     exchange = os.environ["EXCHANGE"]
-    candle_data_lst = []
 
-    try:
-        while utils.get_market_status()["open"]:
-            if not utils.is_trading_time():
-                continue
+    while utils.get_market_status()["open"]:
+        if not utils.is_trading_time():
+            continue
 
-            now = dt.now()
+        now = dt.now()
 
-            # Run for every 5 minute (5 minute candle)
-            if now.minute % 5 == 0 and now.second == 0:
-                if kite_utils.get_holding(symbol):
-                    exit_details = orders.exit_order(exchange, symbol)
-                    if exit_details:
-                        dump_trade_data(exit_details)
-                else:
-                    entry_details = orders.entry_order(exchange, symbol)
-                    if entry_details:
-                        dump_holding_data(entry_details)
-                candle_data_lst.append(get_analyzed_params(exchange, symbol))
-                print(now.strftime("%Y-%m-%d %H:%M:%S") + " - Candle data dumped...")
-                time.sleep(1)
-        else:
-            print("Market is closed due to: " + utils.get_market_status()["reason"])
-    finally:
-        if len(candle_data_lst):
-            mongodb.MongoDB.candle_collection.insert_many(candle_data_lst)
+        # Run for every 5 minute (5 minute candle)
+        if now.minute % 5 == 0 and now.second == 0:
+            if kite_utils.get_holding(symbol):
+                exit_details = orders.exit_order(exchange, symbol)
+                if exit_details:
+                    dump_trade_data(exit_details)
+            else:
+                entry_details = orders.entry_order(exchange, symbol)
+                if entry_details:
+                    dump_holding_data(entry_details)
+            dump_candle_data(get_analyzed_params(exchange, symbol))
+            print(now.strftime("%Y-%m-%d %H:%M:%S") + " - Candle data dumped...")
+            time.sleep(1)
+    else:
+        print("Market is closed due to: " + utils.get_market_status()["reason"])
