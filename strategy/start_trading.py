@@ -4,7 +4,7 @@ import time
 import heroku
 
 from dotenv import load_dotenv
-from constants import Holding, Trade
+from constants import Holding, Trade, Env
 from strategy.entry import get_analyzed_params
 from orders import orders
 from kite_utils import kite_utils
@@ -36,8 +36,8 @@ def dump_trade_data(exit_details):
 
 
 def start_trading():
-    symbol = os.environ["SYMBOL"]
-    exchange = os.environ["EXCHANGE"]
+    symbol = os.environ[Env.SYMBOL]
+    exchange = os.environ[Env.EXCHANGE]
 
     while utils.get_market_status()["open"]:
         if not utils.is_trading_time():
