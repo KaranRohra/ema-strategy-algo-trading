@@ -43,7 +43,12 @@ def exit_order(exchange, symbol):
         Trade.TO: dt.now(),
         Trade.ENTRY_PRICE: holding[Holding.PRICE],
         Trade.EXIT_PRICE: kite.ltp(exchange_symbol)[exchange_symbol]["last_price"],
-        Trade.TRANSACTION_TYPE: holding[Holding.TRANSACTION_TYPE],
+        Trade.ORDER_TRANSACTION_TYPE: (
+            kite.TRANSACTION_TYPE_BUY
+            if holding[Holding.TRANSACTION_TYPE] == kite.TRANSACTION_TYPE_SELL
+            else kite.TRANSACTION_TYPE_SELL
+        ),
+        Trade.HOLDING_TRANSACTION_TYPE: holding[Holding.TRANSACTION_TYPE],
         Trade.STOPLOSS: holding[Holding.STOPLOSS],
     }
 

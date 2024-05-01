@@ -3,6 +3,7 @@ import os
 
 from strategy.start_trading import start_trading
 from constants import Env
+from mail.app import Mail
 
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -11,4 +12,8 @@ if os.environ[Env.ENV] == "PROD":
 
 
 if __name__ == "__main__":
-    start_trading()
+    try:
+        start_trading()
+    except Exception as e:
+        print(e)
+        Mail.send_error_email(str(e))

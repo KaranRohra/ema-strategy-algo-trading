@@ -18,7 +18,7 @@ class Env:
   MONGO_URI = "MONGO_URI"
   EMAIL_ADDRESS = "EMAIL_ADDRESS"
   EMAIL_PASSWORD = "EMAIL_PASSWORD"
-  RECEIVER_EMAIL = "RECEIVER_EMAIL"
+  EMAIL_RECIPIENTS = "EMAIL_RECIPIENTS"
  
 # Holdings CSV Columns
 # symbol,entry_datetime,entry,transaction_type,stoploss
@@ -38,7 +38,8 @@ class Trade:
     TO = "to"
     ENTRY_PRICE = "entry_price"
     EXIT_PRICE = "exit_price"
-    TRANSACTION_TYPE = "transaction_type"
+    ORDER_TRANSACTION_TYPE = "order_transaction_type"
+    HOLDING_TRANSACTION_TYPE = "holding_transaction_type"
     P_AND_L = "profit_and_loss"
     STOPLOSS = "stoploss"
 
