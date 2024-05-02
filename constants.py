@@ -5,23 +5,23 @@ from kiteconnect import KiteConnect
 
 load_dotenv()
 
-# Broker Connect Objects
 kite = KiteConnect(api_key=f"enctoken {os.getenv('KITE_API_KEY')}")
 
-# Env Constants
+DATETIME_FORMAT = "%Y-%m-%d %H:%M:%S"
+
+
 class Env:
-  KITE_API_KEY = "KITE_API_KEY"
-  ENV = "ENV"
-  SYMBOL = "SYMBOL"
-  EXCHANGE = "EXCHANGE"
-  MONGO_DB = "MONGO_DB"
-  MONGO_URI = "MONGO_URI"
-  EMAIL_ADDRESS = "EMAIL_ADDRESS"
-  EMAIL_PASSWORD = "EMAIL_PASSWORD"
-  EMAIL_RECIPIENTS = "EMAIL_RECIPIENTS"
- 
-# Holdings CSV Columns
-# symbol,entry_datetime,entry,transaction_type,stoploss
+    KITE_API_KEY = "KITE_API_KEY"
+    ENV = "ENV"
+    SYMBOL = "SYMBOL"
+    EXCHANGE = "EXCHANGE"
+    MONGO_DB = "MONGO_DB"
+    MONGO_URI = "MONGO_URI"
+    EMAIL_ADDRESS = "EMAIL_ADDRESS"
+    EMAIL_PASSWORD = "EMAIL_PASSWORD"
+    EMAIL_RECIPIENTS = "EMAIL_RECIPIENTS"
+
+
 class Holding:
     SYMBOL = "symbol"
     DATETIME = "entry_datetime"
@@ -30,8 +30,6 @@ class Holding:
     STOPLOSS = "stoploss"
 
 
-# Trades CSV Columns
-# symbol,trade_from,trade_to,entry,exit,transaction_type,p&l,stoploss
 class Trade:
     SYMBOL = "symbol"
     FROM = "from"
@@ -44,7 +42,6 @@ class Trade:
     STOPLOSS = "stoploss"
 
 
-# Strategy Constants
 class Signal:
     ENTER_LONG_POSITION = "Enter Long Position"
     ENTER_SHORT_POSITION = "Enter Short Position"
