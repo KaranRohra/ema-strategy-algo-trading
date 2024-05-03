@@ -4,8 +4,6 @@
 
     API wrapper for Kite Connect REST APIs.
 
-    :copyright: (c) 2021 by Zerodha Technology.
-    :license: see LICENSE for details.
 """
 from six import StringIO, PY2
 from six.moves.urllib.parse import urljoin
@@ -18,19 +16,13 @@ import datetime
 import requests
 import warnings
 
-from .__version__ import __version__, __title__
+from kiteconnect.__version__ import __version__, __title__
 import kiteconnect.exceptions as ex
 
 log = logging.getLogger(__name__)
 
 
 class KiteConnect(object):
-    """
-    The Kite Connect API wrapper class.
-
-    In production, you may initialise a single instance of this class per `api_key`.
-    """
-
     # Default root API endpoint. It's possible to
     # override this by passing the `root` parameter during initialisation.
     _default_root_uri = "https://api.kite.trade"
