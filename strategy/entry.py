@@ -7,32 +7,24 @@ from kite import utils as kite_utils
 from datetime import datetime as dt
 
 
-def get_trend_analysis(price, trend):
-    return pytrendseries.detecttrend(
+def get_trend_analysis(price, trend, param_key):
+    price_trend = pytrendseries.detecttrend(
         pd.DataFrame({"price": price}),
         trend=trend,
     ).to_dict(orient="records")[-1]
 
+    trend_key = f"is_{param_key}_in_{trend}"
+    time_span_key = f"{param_key}_{trend}_time_span"
 
-def get_ema5_and_ema20_analysis(ema5, ema20, trend):
-    ema20_trend = get_trend_analysis(ema20, trend)
-    ema5_trend = get_trend_analysis(ema5, trend)
-
-    ema5_and_ema20_analysis = {
-        f"is_ema5_in_{trend}": len(ema5) - 1 == ema5_trend["index_to"],
-        f"ema5_{trend}_time_span": 0,
-        f"is_ema20_in_{trend}": len(ema20) - 1 == ema20_trend["index_to"]
-        and ema20_trend["time_span"] >= 10,
-        f"ema20_{trend}_time_span": 0,
+    analyzed_params = {
+        trend_key: len(price) - 1 == price_trend["index_to"],
+        time_span_key: 0,
     }
 
-    if ema5_and_ema20_analysis[f"is_ema5_in_{trend}"]:
-        ema5_and_ema20_analysis[f"ema5_{trend}_time_span"] = ema5_trend["time_span"]
+    if analyzed_params[trend_key]:
+        analyzed_params[time_span_key] = price_trend["time_span"]
 
-    if ema5_and_ema20_analysis[f"is_ema20_in_{trend}"]:
-        ema5_and_ema20_analysis[f"ema20_{trend}_time_span"] = ema20_trend["time_span"]
-
-    return ema5_and_ema20_analysis
+    return analyzed_params
 
 
 def get_analyzed_params(exchange, symbol) -> dict:
@@ -49,9 +41,13 @@ def get_analyzed_params(exchange, symbol) -> dict:
         "exchange": exchange,
         "datetime": dt.now(),
         "close_above_emas": close[-1] > ema20[-1] > ema50[-1] > ema100[-1] > ema200[-1],
-        **get_ema5_and_ema20_analysis(ema5, ema20, "uptrend"),
+        **get_trend_analysis(close, "uptrend", "close"),
+        **get_trend_analysis(ema5, "uptrend", "ema5"),
+        **get_trend_analysis(ema20, "uptrend", "ema20"),
         "close_below_emas": close[-1] < ema20[-1] < ema50[-1] < ema100[-1] < ema200[-1],
-        **get_ema5_and_ema20_analysis(ema5, ema20, "downtrend"),
+        **get_trend_analysis(close, "downtrend", "close"),
+        **get_trend_analysis(ema5, "downtrend", "ema5"),
+        **get_trend_analysis(ema20, "downtrend", "ema20"),
     }
 
 
@@ -60,14 +56,18 @@ def entry_signal(exchange, symbol) -> Signal:
 
     if (
         analyzed_params["close_above_emas"]
+        and analyzed_params["is_close_in_uptrend"]
         and analyzed_params["is_ema5_in_uptrend"]
         and analyzed_params["is_ema20_in_uptrend"]
+        and analyzed_params["ema20_uptrend_time_span"] >= 10
     ):
         return Signal.ENTER_LONG_POSITION
 
     if (
         analyzed_params["close_below_emas"]
+        and analyzed_params["is_close_in_downtrend"]
         and analyzed_params["is_ema5_in_downtrend"]
         and analyzed_params["is_ema20_in_downtrend"]
+        and analyzed_params["ema20_downtrend_time_span"] >= 10
     ):
         return Signal.ENTER_SHORT_POSITION
