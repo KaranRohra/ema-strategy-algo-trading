@@ -5,6 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from constants import Env, Trade, Holding, DATETIME_FORMAT
 from mail import html_template
+from datetime import datetime as dt
 
 
 class Mail:
@@ -15,7 +16,7 @@ class Mail:
         recipients = os.environ.get(Env.EMAIL_RECIPIENTS)
 
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
+        msg["Subject"] = subject + " - " + dt.now().strftime("%d %b %Y")
         msg["From"] = email_address
         msg["To"] = recipients
         msg.attach(MIMEText(body, body_content_type))
@@ -56,11 +57,11 @@ class Mail:
     @staticmethod
     def send_market_close_email(reason):
         subject = "Algo Trading - Market Closed"
-        body = f"Market is closed due to: {reason}"
+        body = f"Market is closed due to:\n{reason}"
         Mail.send_email(subject, body)
 
     @staticmethod
     def send_trading_started_email():
-        subject = "Algo Trading - Trading Started"
-        body = "Trading has been started."
+        subject = f"Algo Trading - Trading Started - {os.environ.get(Env.SYMBOL)}"
+        body = "Trading is started."
         Mail.send_email(subject, body)

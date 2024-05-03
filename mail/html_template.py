@@ -24,7 +24,7 @@ def table_with_two_columns(key_value_pairs):
             </tr>
             {"".join(
                 [
-                f"<tr><td>{key.title().replace('_', ' ')}</td><td>{str(value).title().replace('_', ' ')}</td></tr>"
+                f"<tr><td>{key.title().replace('_', ' ')}</td><td>{value}</td></tr>"
                 for key, value in key_value_pairs.items()
                 ]
             )}
