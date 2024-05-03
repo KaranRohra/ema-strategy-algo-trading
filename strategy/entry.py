@@ -3,7 +3,7 @@ import pytrendseries
 import ta.trend
 
 from constants import Signal
-from kite_utils import kite_utils
+from kite import utils as kite_utils
 from datetime import datetime as dt
 
 

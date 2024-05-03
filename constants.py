@@ -1,7 +1,7 @@
 import os
 
 from dotenv import load_dotenv
-from connect import KiteConnect
+from kite.connect import KiteConnect
 
 load_dotenv()
 

@@ -2,7 +2,7 @@ import ta.trend
 import pandas as pd
 
 from constants import Signal
-from kite_utils import kite_utils
+from kite import utils as kite_utils
 
 
 def get_stoploss(exchange, symbol):

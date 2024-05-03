@@ -1,7 +1,7 @@
 from constants import Signal, Holding, kite, Trade
 from strategy import entry, exit
 from datetime import datetime as dt
-from kite_utils import kite_utils
+from kite import utils as kite_utils
 
 
 def entry_order(exchange, symbol):

@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 from constants import Holding, Trade, Env
 from strategy.entry import get_analyzed_params
 from orders import orders
-from kite_utils import kite_utils
+from kite import utils as kite_utils
 from datetime import datetime as dt
 from db import mongodb
 from mail.app import Mail
