@@ -8,6 +8,7 @@ from datetime import datetime as dt
 
 
 def get_trend_analysis(price, trend, param_key):
+    price = price[-500:]
     price_trend = pytrendseries.detecttrend(
         pd.DataFrame({"price": price}),
         trend=trend,

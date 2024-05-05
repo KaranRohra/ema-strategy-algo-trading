@@ -1,5 +1,5 @@
 import os
-import utils
+import market_utils
 import time
 
 from dotenv import load_dotenv
@@ -42,8 +42,8 @@ def start_trading():
     exchange = os.environ[Env.EXCHANGE]
 
     is_trading_started_mail_sent = False
-    while utils.get_market_status()["open"]:
-        if not utils.is_trading_time():
+    while market_utils.get_market_status()["open"]:
+        if not market_utils.is_trading_time():
             continue
 
         if not is_trading_started_mail_sent:
@@ -66,5 +66,5 @@ def start_trading():
             print(now.strftime("%Y-%m-%d %H:%M:%S") + " - Candle data dumped...")
             time.sleep(1)
 
-    print("Market is closed due to: " + utils.get_market_status()["reason"])
-    Mail.send_market_close_email(utils.get_market_status()["reason"])
+    print("Market is closed due to: " + market_utils.get_market_status()["reason"])
+    Mail.send_market_close_email(market_utils.get_market_status()["reason"])
