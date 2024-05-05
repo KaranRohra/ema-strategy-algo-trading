@@ -5,11 +5,11 @@ from kite import utils as kite_utils
 
 
 def entry_order(exchange, symbol):
+    if kite_utils.get_holding(symbol):
+        return None
     signal = entry.entry_signal(exchange, symbol)
     exchange_symbol = f"{exchange}:{symbol}"
     ohlc = kite.ohlc([exchange_symbol])[exchange_symbol]["ohlc"]
-    if kite_utils.get_holding(symbol):
-        return None
 
     entry_details = {
         Holding.SYMBOL: symbol,
