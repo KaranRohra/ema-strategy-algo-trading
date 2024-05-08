@@ -1,19 +1,9 @@
 import ta.trend
 import pandas as pd
 
-from constants import Signal
+from constants import Trade, Holding, kite
 from kite import utils as kite_utils
-
-
-def get_stoploss(exchange, symbol):
-    return round(
-        ta.trend.ema_indicator(
-            close=pd.Series(
-                [h["close"] for h in kite_utils.get_historical_data(exchange, symbol)]
-            ),
-            window=200,
-        ).to_list()[-1]
-    )
+from db.mongodb import MongoDB
 
 
 def is_ema_crossed(close):
@@ -26,12 +16,28 @@ def is_ema_crossed(close):
     }
 
 
-def exit_signal(exchange, symbol):
-    close = [h["close"] for h in kite_utils.get_historical_data(exchange, symbol)]
+def exit(exchange, symbol, ohlc):
+    close = [candle["close"] for candle in ohlc]
     analyzed_params = is_ema_crossed(close)
+    holding = kite_utils.get_holding(symbol)
+    if holding is None:
+        return
 
-    if analyzed_params["is_close_below_ema200"]:
-        return Signal.EXIT_LONG_POSITION
+    exit_details = {
+        **holding,
+        Trade.FROM: holding[Holding.DATETIME],
+        Trade.TO: ohlc[-1]["date"],
+        Trade.ENTRY_PRICE: holding[Holding.PRICE],
+        Trade.EXIT_PRICE: ohlc[-1]["close"],
+    }
 
-    if analyzed_params["is_close_above_ema200"]:
-        return Signal.EXIT_SHORT_POSITION
+    if (
+        analyzed_params["is_close_below_ema200"]
+        and holding[Holding.TRANSACTION_TYPE] == kite.TRANSACTION_TYPE_BUY
+    ) or (
+        analyzed_params["is_close_above_ema200"]
+        and holding[Holding.TRANSACTION_TYPE] == kite.TRANSACTION_TYPE_SELL
+    ):
+        MongoDB.trade_collection.insert_one(exit_details)
+        MongoDB.holding_collection.delete_one({Holding.SYMBOL: symbol})
+        print(f"Exited Position for {symbol} at {ohlc[-1]['date']}...")

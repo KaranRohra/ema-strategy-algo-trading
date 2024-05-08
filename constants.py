@@ -25,9 +25,10 @@ class Env:
 class Holding:
     SYMBOL = "symbol"
     DATETIME = "entry_datetime"
-    PRICE = "price"
+    PRICE = "entry_price"
     TRANSACTION_TYPE = "transaction_type"
     STOPLOSS = "stoploss"
+    EXCHANGE = "exchange"
 
 
 class Trade:
@@ -40,6 +41,7 @@ class Trade:
     HOLDING_TRANSACTION_TYPE = "holding_transaction_type"
     P_AND_L = "profit_and_loss"
     STOPLOSS = "stoploss"
+    EXCHANGE = "exchange"
 
 
 class Signal:
