@@ -99,3 +99,8 @@ def enter(exchange, symbol, ohlc) -> Signal:
         entry_details[Holding.TRANSACTION_TYPE] = kite.TRANSACTION_TYPE_SELL
         MongoDB.holding_collection.insert_one(entry_details)
         print(f"Entered Short Position for {symbol} at {ohlc[-1]['date']}...")
+
+
+def signal(exchange, symbol):
+    
+    ...

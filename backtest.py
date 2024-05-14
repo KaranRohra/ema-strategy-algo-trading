@@ -1,81 +1,109 @@
 import os
+import datetime as dt
 import pandas as pd
-from datetime import datetime as dt, timedelta
+import strategies as st
 
-from constants import Env
-from kite import utils as kite_utils
+from kite import utils as ktu
 from constants import kite
-from db import mongodb
-from strategy import entry, exit
 
 
-def start_back_testing(from_date, to_date):
-    mongodb.MongoDB.holding_collection.delete_many({})
-    mongodb.MongoDB.trade_collection.delete_many({})
+def search_entry(exchange, symbol, ohlc, holdings, strategy_func):
+    analysis = strategy_func(ohlc)
+    curr = ohlc[-1]
+    signal = analysis["signal"]
+    trade = {
+        "tradingsymbol": symbol,
+        "exchange": exchange,
+        "from": curr["date"],
+        "entry_price": curr["close"],
+        **analysis,
+    }
+    if signal == kite.TRANSACTION_TYPE_BUY:
+        trade["quantity"] = 1
+        trade["signal"] = "BUY"
+        holdings.append(trade)
+        print("Entered long position")
+    elif signal == kite.TRANSACTION_TYPE_SELL:
+        trade["quantity"] = -1
+        trade["signal"] = "SELL"
+        holdings.append(trade)
+        print("Entered short position")
 
-    symbol = os.environ[Env.SYMBOL]
-    exchange = os.environ[Env.EXCHANGE]
 
-    candle_data = get_historical_data_for_back_testing(
-        exchange, symbol, from_date, to_date
-    )
-    current_candle_index = 300
-    ohlc = candle_data[0 : current_candle_index - 1]
+def search_exit(exchange, symbol, ohlc, holding, trades):
+    curr = ohlc[-1]
+    holding["exit_price"] = curr["close"]
+    holding["to"] = curr["date"]
 
-    while current_candle_index < len(candle_data):
-        ohlc.append(candle_data[current_candle_index])
-        entry.enter(exchange, symbol, ohlc)
-        exit.exit(exchange, symbol, ohlc)
-        current_candle_index += 1
-        print(f"Completed {current_candle_index} out of {len(candle_data)} candles...")
+    if holding["quantity"] > 0 and curr["close"] < curr["ema200"]:
+        holding["transaction_type"] = kite.TRANSACTION_TYPE_SELL
+        trades.append(holding)
+        print("Exited long position")
+        return True
+    elif holding["quantity"] < 0 and curr["close"] > curr["ema200"]:
+        holding["transaction_type"] = kite.TRANSACTION_TYPE_BUY
+        trades.append(holding)
+        print("Exited short position")
+        return True
 
 
 def get_historical_data_for_back_testing(exchange, symbol, from_date, to_date):
-    instrument_token = kite_utils.get_symbol_ltp(exchange, symbol)["instrument_token"]
-
-    start_date = dt(from_date.year, from_date.month, from_date.day, 0, 0)
-
-    end_date = start_date + timedelta(days=98)
+    start_date = dt.datetime(from_date.year, from_date.month, from_date.day, 0, 0)
+    end_date = start_date + dt.timedelta(days=98)
 
     historical_data = []
 
     while end_date <= to_date:
         historical_data.extend(
-            kite.historical_data(
-                instrument_token,
-                from_date=start_date,
-                to_date=end_date,
-                interval="5minute",
+            ktu.get_historical_data(
+                exchange, symbol, from_date=start_date, to_date=end_date
             )
         )
-        start_date = end_date
-        end_date += timedelta(days=98)
+        print(f"Historical data fetched... for: {start_date} to {end_date}")
+        start_date = end_date + dt.timedelta(days=1)
+        end_date += dt.timedelta(days=97)
 
     if end_date > to_date:
+        print(f"Historical data fetched... for: {start_date} to {end_date}")
         historical_data.extend(
-            kite.historical_data(
-                instrument_token,
-                from_date=start_date,
-                to_date=to_date,
-                interval="5minute",
+            ktu.get_historical_data(
+                exchange, symbol, from_date=start_date, to_date=to_date
             )
         )
     print(historical_data[:5])
-    print(f"Historical data fetched... for: {from_date} to {to_date}")
 
     return historical_data
 
 
+def start(exchange, symbol, strategy_func):
+    ohlc = pd.read_csv("./analysis/final_candle_analysis.csv").to_dict("records")
+    candle_index = 250
+    holdings, trades = [], []
+    while candle_index < len(ohlc):
+        candles = ohlc[candle_index - 250 : candle_index + 1]
+        holding = [h for h in holdings if h["tradingsymbol"] == symbol]
+        if holding:
+            if search_exit(exchange, symbol, candles, holding[0], trades):
+                holdings = [h for h in holdings if h["tradingsymbol"] != symbol]
+        else:
+            search_entry(exchange, symbol, candles, holdings, strategy_func)
+
+        candle_index += 1
+        print(f"Completed {candle_index}/{len(ohlc)} candles")
+    return trades
+
+
 if __name__ == "__main__":
-    strategy_name = "ema_20_close_trend_2009_to_2014"
-    pd.DataFrame(list(mongodb.MongoDB.trade_collection.find({}))).to_csv(
-        "./analysis/" + strategy_name + ".csv"
-    )
-    start_back_testing(
-        from_date=dt(2014, 1, 1),
-        to_date=dt(2015, 12, 31),
+    exchange, symbol = os.environ["EXCHANGE"], os.environ["SYMBOL"]
+    strategy = "s8"
+    trades = start(
+        exchange,
+        symbol,
+        st.s8,
     )
 
-    pd.DataFrame(list(mongodb.MongoDB.trade_collection.find({}))).to_csv(
-        "./analysis/" + strategy_name + ".csv"
-    )
+    csv_path = "./analysis/" + strategy + ".csv"
+    for i in range(len(trades)):
+        trades[i]["index"] = i
+        trades[i]["strategy"] = strategy
+    pd.DataFrame(trades).to_csv(csv_path, index=False)

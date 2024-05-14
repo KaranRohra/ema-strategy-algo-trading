@@ -5,10 +5,10 @@ from constants import Env
 
 
 class MongoDB:
+    os.environ[Env.MONGO_DB] = "prod"
     _client = pymongo.MongoClient(os.environ.get(Env.MONGO_URI))
     _db = _client[os.environ.get(Env.MONGO_DB)]
-    trade_collection = _db["trades"]
-    holding_collection = _db["holdings"]
-    candle_collection = _db["candles"]
-
-    holding_cache = None
+    trades = _db["trades"]
+    holdings = _db["holdings"]
+    candles = _db["candles"]
+    holidays = _db["holidays"]
