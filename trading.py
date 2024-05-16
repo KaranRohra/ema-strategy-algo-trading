@@ -3,16 +3,7 @@ import os
 
 from kite import utils as ktu
 from constants import kite
-
-
-def start():
-    exchange, symbol = os.environ["EXCHANGE"], os.environ["SYMBOL"]
-    ohlc = ktu.get_historical_data(exchange, symbol)
-
-    if ktu.get_symbol_holding(symbol):
-        search_exit(exchange, symbol, ohlc)
-    else:
-        search_entry(exchange, symbol, ohlc)
+from db.mongodb import MongoDB
 
 
 def get_product_type():
@@ -32,11 +23,12 @@ def search_entry(exchange, symbol, ohlc):
         "order_type": kite.ORDER_TYPE_SLM,
         "validity": kite.VALIDITY_DAY,
     }
-    if signals.can_enter_long_position(ohlc):
+    signal_details = signals.get_entry_signal(ohlc)
+    if signal_details["signal"] == "BUY":
         order_details["trigger_price"] = ohlc[-1]["high"]
         order_details["transaction_type"] = kite.TRANSACTION_TYPE_BUY
         kite.place_order(order_details)
-    elif signals.can_enter_short_position(ohlc):
+    elif signal_details["signal"] == "SELL":
         order_details["trigger_price"] = ohlc[-1]["low"]
         order_details["transaction_type"] = kite.TRANSACTION_TYPE_SELL
         kite.place_order(order_details)
@@ -55,7 +47,17 @@ def search_exit(exchange, symbol, ohlc):
     }
     if holding["quantity"] > 0 and signals.can_exit_long_position(ohlc):
         order_details["transaction_type"] = kite.TRANSACTION_TYPE_SELL
-        kite.place_order(order_details)
+        order_id = kite.place_order(order_details)["order_id"]
     elif holding["quantity"] < 0 and signals.can_exit_short_position(ohlc):
         order_details["transaction_type"] = kite.TRANSACTION_TYPE_BUY
-        kite.place_order(order_details)
+        order_id = kite.place_order(order_details)["order_id"]
+
+
+def start():
+    exchange, symbol = os.environ["EXCHANGE"], os.environ["SYMBOL"]
+    ohlc = ktu.get_historical_data(exchange, symbol)
+
+    if ktu.get_symbol_holding(symbol):
+        search_exit(exchange, symbol, ohlc)
+    else:
+        search_entry(exchange, symbol, ohlc)

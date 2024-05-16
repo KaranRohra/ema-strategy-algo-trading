@@ -12,15 +12,15 @@ def get_current_ohlc(exchange, symbol):
     return kite.ohlc(f"{exchange}:{symbol}")[f"{exchange}:{symbol}"]["ohlc"]
 
 
-def get_symbol_holding(symbol, live=True):
-    if live:
-        positions = [p for p in kite.positions()["net"] if p["quantity"] != 0]
-        positions.extend(kite.holdings())
-        symbol_position = [p for p in positions if p["tradingsymbol"] == symbol]
-    else:
-        symbol_position = list(MongoDB.holdings.find({}))
+def get_symbol_holding(symbol):
+    positions = [p for p in kite.positions()["net"] if p["quantity"] != 0]
+    positions.extend(kite.holdings())
+    symbol_position = [p for p in positions if p["tradingsymbol"] == symbol]
     return symbol_position[0] if symbol_position else None
 
+def get_order_status(order_id):
+    orders = kite.orders()
+    return [o for o in kite.orders]
 
 def get_historical_data(
     exchange,

@@ -33,12 +33,12 @@ def dump_data():
     )
 
 
-def dump_trend(ema_value):
+def dump_trend(ema_value, limit=5, window=21):
     historical_data = pd.read_csv("./analysis/historical_data.csv").to_dict("records")
     analysis_lst = []
     for i in range(1000, len(historical_data)):
         ema = trend.ema_indicator(
-            pd.Series([c["close"] for c in historical_data[i - 1000: i + 1]]),
+            pd.Series([c["close"] for c in historical_data[i - 1000 : i + 1]]),
             window=ema_value,
         ).tolist()
         key = "ema" + str(ema_value)
@@ -46,8 +46,8 @@ def dump_trend(ema_value):
             {
                 **historical_data[i],
                 key: ema[-1],
-                **gta(ema, "uptrend", key),
-                **gta(ema, "downtrend", key),
+                **gta(ema, "uptrend", key, limit, window),
+                **gta(ema, "downtrend", key, limit, window),
             }
         )
         print(f"Completed {i}/{len(historical_data)} candles")
@@ -58,21 +58,17 @@ def dump_trend(ema_value):
 
 def combine_and_dump_all():
     final_data = []
-    ema20_data = pd.read_csv("./analysis/candles/ema20_trend.csv").to_dict("records")
-    ema50_data = pd.read_csv("./analysis/candles/ema50_trend.csv").to_dict("records")
-    ema100_data = pd.read_csv("./analysis/candles/ema100_trend.csv").to_dict("records")
-    ema200_data = pd.read_csv("./analysis/candles/ema200_trend.csv").to_dict("records")
-    for i in range(len(ema20_data)):
+    ema5_data = pd.read_csv("./analysis/candles/ema5_trend.csv").to_dict("records")
+    candle_data = pd.read_csv("./analysis/final_candle_analysis.csv").to_dict("records")
+    for i in range(len(candle_data)):
         final_data.append(
             {
-                **ema20_data[i],
-                **ema50_data[i],
-                **ema100_data[i],
-                **ema200_data[i],
+                **ema5_data[i],
+                **candle_data[i],
             }
         )
-        print(f"Completed {i}/{len(ema20_data)} candles")
-    
+        print(f"Completed {i}/{len(candle_data)} candles")
+
     pd.DataFrame(final_data).to_csv("./analysis/final_candle_analysis.csv", index=False)
 
 

@@ -95,11 +95,11 @@ def start(exchange, symbol, strategy_func):
 
 if __name__ == "__main__":
     exchange, symbol = os.environ["EXCHANGE"], os.environ["SYMBOL"]
-    strategy = "s8"
+    strategy = input("Enter the strategy to backtest: ")
     trades = start(
         exchange,
         symbol,
-        st.s8,
+        getattr(st, strategy),
     )
 
     csv_path = "./analysis/" + strategy + ".csv"

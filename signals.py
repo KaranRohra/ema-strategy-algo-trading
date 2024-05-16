@@ -1,12 +1,15 @@
 import ta.trend as trend
 import pandas as pd
 from pytrendseries import detecttrend as pydt
+from strategies import s7
 
 
-def get_trend_analysis(price, trend, param_key):
+def get_trend_analysis(price, trend, param_key, limit: int = 5, window: int = 21):
     price_trend = pydt(
         pd.DataFrame({"price": price}),
         trend=trend,
+        limit=limit,
+        window=window,
     ).to_dict(orient="records")
 
     if len(price_trend) == 0:
@@ -27,7 +30,7 @@ def get_trend_analysis(price, trend, param_key):
     }
 
 
-def get_analyzed_params(ohlc, trend_type) -> dict:
+def get_entry_signal(ohlc) -> dict:
     close = [c["close"] for c in ohlc]
     close_series = pd.Series(close)
     ema20 = trend.ema_indicator(close_series, window=20).tolist()
@@ -35,51 +38,20 @@ def get_analyzed_params(ohlc, trend_type) -> dict:
     ema100 = trend.ema_indicator(close_series, window=100).tolist()
     ema200 = trend.ema_indicator(close_series, window=200).tolist()
 
-    candle_cnt_above_ema50 = 0
-    candle_cnt_below_ema50 = 0
-    for i in range(len(close) - 1, -1, -1):
-        if close[i] <= ema50[i]:
-            break
-        candle_cnt_above_ema50 += 1
-
-    for i in range(len(close) - 1, -1, -1):
-        if close[i] >= ema50[i]:
-            break
-        candle_cnt_below_ema50 += 1
-    return {
-        "close_above_emas": close[-1] > ema50[-1] > ema200[-1],
-        "close_below_emas": close[-1] < ema50[-1] < ema200[-1],
-        "candle_cnt_above_ema50": candle_cnt_above_ema50,
-        "candle_cnt_below_ema50": candle_cnt_below_ema50,
-        **get_trend_analysis(close, trend_type, "close"),
-        # **get_trend_analysis(ema20, trend_type, "ema20"),
-        **get_trend_analysis(ema50, trend_type, "ema50"),
-        # **get_trend_analysis(ema100, trend_type, "ema100"),
-        # **get_trend_analysis(ema200, trend_type, "ema200"),
-    }
-
-
-def can_enter_long_position(ohlc):
-    analyzed_params = get_analyzed_params(ohlc, "uptrend")
-
-    return (
-        analyzed_params["is_close_in_uptrend"]
-        and analyzed_params["is_ema20_in_uptrend"]
-        and analyzed_params["is_ema50_in_uptrend"]
-        and analyzed_params["is_ema100_in_uptrend"]
+    ohlc[-1].update(
+        {
+            **get_trend_analysis(ema20, "uptrend", "ema20"),
+            **get_trend_analysis(ema50, "uptrend", "ema50"),
+            **get_trend_analysis(ema200, "uptrend", "ema200"),
+            **get_trend_analysis(ema20, "downtrend", "ema20"),
+            **get_trend_analysis(ema50, "downtrend", "ema50"),
+            **get_trend_analysis(ema100, "downtrend", "ema100"),
+        }
     )
 
-
-def can_enter_short_position(ohlc):
-    analyzed_params = get_analyzed_params(ohlc, "downtrend")
-
-    return (
-        analyzed_params["is_close_in_downtrend"]
-        and analyzed_params["is_ema20_in_downtrend"]
-        and analyzed_params["is_ema50_in_downtrend"]
-        and analyzed_params["is_ema100_in_downtrend"]
-        and analyzed_params["is_ema200_in_downtrend"]
-    )
+    for i in range(len(ema200) - 1, -1, -1):
+        ohlc[i].update({"ema20": ema20[i], "ema50": ema50[i], "ema200": ema200[i]})
+    return s7(ohlc)
 
 
 def can_exit_long_position(ohlc):
