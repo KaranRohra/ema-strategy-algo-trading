@@ -37,6 +37,11 @@ class KiteUtils:
         return kite.ltp([symbol])[symbol]["instrument_token"]
 
     @staticmethod
+    def get_ltp(exchange, symbol):
+        symbol = f"{exchange}:{symbol}"
+        return kite.ltp([symbol])[symbol]["last_price"]
+
+    @staticmethod
     def get_historical_data(
         exchange,
         symbol,

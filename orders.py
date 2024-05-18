@@ -5,7 +5,34 @@ from os import environ
 from utils import get_product_type, KiteUtils
 from constants import kite, Env
 from db import MongoDB
-from datetime import datetime as dt
+
+
+def place_entry_order(exchange, symbol, order_details, holding):
+    tran_type = order_details["transaction_type"]
+    wait_time = 9 * 60
+    while wait_time > 0:
+        ltp = KiteUtils.get_ltp(exchange, symbol)
+        if tran_type == kite.TRANSACTION_TYPE_BUY and ltp >= order_details["price"]:
+            order_details["price"] = ltp
+            break
+        elif tran_type == kite.TRANSACTION_TYPE_SELL and ltp <= order_details["price"]:
+            order_details["price"] = ltp
+            break
+        time.sleep(1)
+        wait_time -= 1
+    order_details["validity_ttl"] = wait_time // 60 + 1
+    order_id = kite.place_order(**order_details)
+    print(f"Order placed: {order_id}")
+    while KiteUtils.get_order_status(order_id)["status"] not in (
+        kite.STATUS_COMPLETE,
+        kite.STATUS_REJECTED,
+        kite.STATUS_CANCELLED,
+    ):
+        time.sleep(10)
+
+    if KiteUtils.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
+        MongoDB.holdings.insert_one(holding)
+    print(f"Order executed: {order_id}")
 
 
 def search_entry(exchange, symbol, ohlc):
@@ -24,31 +51,21 @@ def search_entry(exchange, symbol, ohlc):
         "from": ohlc[-1]["date"],
         **signal_details,
     }
-    MongoDB.candles.insert_one(signal_details)
     print(f"Signal details: {signal_details}")
 
-    order_id = kite.place_order(
-        tradingsymbol=symbol,
-        exchange=exchange,
-        product=get_product_type(),
-        variety=kite.VARIETY_REGULAR,
-        transaction_type=signal_details["signal"],
-        quantity=holding["quantity"],
-        order_type=kite.ORDER_TYPE_LIMIT,
-        price=holding["entry_price"],
-        validity=kite.VALIDITY_TTL,
-        validity_ttl=9,
-    )
-    print(f"Order placed: {order_id}")
+    order_detail = {
+        "tradingsymbol": symbol,
+        "exchange": exchange,
+        "product": get_product_type(),
+        "variety": kite.VARIETY_REGULAR,
+        "transaction_type": signal_details["signal"],
+        "quantity": holding["quantity"],
+        "order_type": kite.ORDER_TYPE_LIMIT,
+        "price": holding["entry_price"],
+        "validity": kite.VALIDITY_TTL,
+    }
 
-    order_time = dt.now()
-    while order_time.minute + 9 >= dt.now().minute:
-        if KiteUtils.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
-            MongoDB.holdings.insert_one(holding)
-            print(f"Order executed successfully: {order_id}")
-            return
-        time.sleep(10)
-    print(f"Order cancelled: {order_id}")
+    place_entry_order(exchange, symbol, order_detail, holding)
 
 
 def search_exit(ohlc, holding):
