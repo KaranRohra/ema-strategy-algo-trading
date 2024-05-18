@@ -40,11 +40,10 @@ class KiteUtils:
     def get_historical_data(
         exchange,
         symbol,
-        interval="5minute",
-        from_date=dt.now() - td(days=95),
-        to_date=dt.now(),
+        interval,
+        from_date,
+        to_date,
     ):
-        to_date = to_date.replace(minute=to_date.minute - to_date.minute % 5)
         return kite.historical_data(
             instrument_token=KiteUtils.get_instrument_token(exchange, symbol),
             interval=interval,
@@ -74,3 +73,16 @@ class MarketUtils:
                 f"Market is closed: {now} - Market timings: {start_time} - {end_time}"
             )
         return market_open
+
+    @staticmethod
+    def get_candle_interval(time_frame) -> str:
+        return {
+            "1": "minute",
+            "day": "day",
+            "3": "3minute",
+            "5": "5minute",
+            "10": "10minute",
+            "15": "15minute",
+            "30": "30minute",
+            "60": "60minute",
+        }[time_frame]

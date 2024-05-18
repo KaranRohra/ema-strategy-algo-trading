@@ -2,16 +2,22 @@ import ta.trend as trend
 from os import environ
 import pandas as pd
 from datetime import datetime, timedelta as td
+
 # from pytrendseries import detecttrend as dt
+import requests
 
-
-from utils import KiteUtils
-from constants import kite, Env
+from utils import KiteUtils, last
+from constants import Env, kite
 from utils import get_product_type
 from strategy import get_trend_analysis
+from kite.connect import KiteConnect
 
-print(kite.get_gtts())
-# symbol, exchange = environ[Env.SYMBOL], environ[Env.EXCHANGE]
+# res = requests.get(url="https://api.kite.trade/gtt/triggers", headers={"Authorization": "token Karan:ROHRA"})
+# print(res.json())
+# res = requests.get(url="https://api.kite.trade/gtt/triggers", headers={"Authorization": "enctoken IYrjvehR5R+EvIMXw5u//P00JmnzaUkIPaylQWCqOTyB8NX6Vflp1lSXLg7IEJFOGpKa185xiQgZBlQCsamlkiSm+bYccuJLqYG9h4Nq5H+hCJxKMy6bDw=="})
+# print(res.json())
+# print(kite.get_gtts())
+print(KiteUtils.get_order_status("1791720135774461952"))
 # to_date = datetime.now()
 # to_date = datetime(
 #     to_date.year,
@@ -35,28 +41,4 @@ print(kite.get_gtts())
 # print(t)
 # print("***************")
 # print(get_trend_analysis(ema20, "uptrend", "ema20"))
-
-# # order_details = {
-# #   "tradingsymbol": symbol,
-# #   "exchange": exchange,
-# #   "product": get_product_type(),
-# #   "variety": kite.VARIETY_REGULAR,
-# #   "quantity": 10,
-# #   "order_type": kite.ORDER_TYPE_SLM,
-# #   "validity": kite.VALIDITY_DAY,
-# #   "transaction_type": kite.TRANSACTION_TYPE_BUY,
-# #   "trigger_price": 87400,
-# # }
-# # o = kite.place_order(**order_details)
-# # print(o, type(o))
-
-# kite.cancel_order(variety=kite.VARIETY_REGULAR, order_id="2109")
-
-
-TIME_FORMAT = "%H:%M:%S"
-start_time, end_time = datetime.strptime(
-    environ["START_TIME"], TIME_FORMAT
-), datetime.strptime(environ["END_TIME"], TIME_FORMAT)
-
-print(type(start_time), type(end_time), start_time, end_time)
 

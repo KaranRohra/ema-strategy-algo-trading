@@ -19,3 +19,4 @@ class Env:
     MONGO_DB = "MONGO_DB"
     START_TIME = "START_TIME"
     END_TIME = "END_TIME"
+    TIME_FRAME = "TIME_FRAME"

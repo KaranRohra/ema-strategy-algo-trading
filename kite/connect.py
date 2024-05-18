@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 class KiteConnect(object):
     # Default root API endpoint. It's possible to
     # override this by passing the `root` parameter during initialisation.
-    _default_root_uri = "https://api.kite.trade"
+    _default_root_uri = "https://kite.zerodha.com"
     _default_login_uri = "https://kite.zerodha.com/connect/login"
     _default_timeout = 7  # In seconds
 
@@ -1004,7 +1004,7 @@ class KiteConnect(object):
         else:
             uri = self._routes[route]
 
-        url = urljoin(self.root, uri)
+        url = urljoin(self.root, "/oms" + uri)
 
         # Custom headers
         headers = {
