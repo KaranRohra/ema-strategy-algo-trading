@@ -2,7 +2,7 @@ import ta.trend as trend
 import pandas as pd
 import utils
 
-from pytrendseries import detecttrend as dt
+from pytrendseries import detecttrend as pydt
 from constants import kite
 
 
@@ -63,9 +63,9 @@ def _strategy(ohlc: list):
 
 
 def get_trend_analysis(price, trend, param_key):
-    price_trend = dt(pd.DataFrame({"price": price}), trend=trend).to_dict(
-        orient="records"
-    )
+    price_trend = pydt(
+        pd.DataFrame({"price": price}), trend=trend, limit=5, window=100
+    ).to_dict(orient="records")
     return {
         f"is_{param_key}_in_{trend}": len(price) - 1
         == utils.last(price_trend)["index_to"],

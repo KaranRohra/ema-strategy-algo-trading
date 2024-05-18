@@ -9,3 +9,4 @@ class MongoDB:
     _db = _client[environ[Env.MONGO_DB]]
     trades = _db["trades"]
     holdings = _db["holdings"]
+    candles = _db["candles"]
