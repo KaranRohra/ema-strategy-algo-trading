@@ -144,12 +144,15 @@ class KiteConnect(object):
         # Margin computation endpoints
         "order.margins": "/oms/margins/orders",
         "order.margins.basket": "/oms/margins/basket",
+        "baskets": "/api/baskets",
         "order.contract_note": "/oms/charges/orders",
+        # Market watch list endpoints
+        "marketwatches.all": "/api/marketwatch",
     }
 
     def __init__(
         self,
-        api_key,
+        api_key=None,
         access_token=None,
         root=None,
         debug=False,
@@ -157,6 +160,7 @@ class KiteConnect(object):
         proxies=None,
         pool=None,
         disable_ssl=False,
+        headers=None,
     ):
         """
         Initialise a new Kite Connect client instance.
@@ -186,6 +190,7 @@ class KiteConnect(object):
         self.disable_ssl = disable_ssl
         self.access_token = access_token
         self.proxies = proxies if proxies else {}
+        self.headers = headers if headers else {}
 
         self.root = root or self._default_root_uri
         self.timeout = timeout or self._default_timeout
@@ -609,20 +614,14 @@ class KiteConnect(object):
         else:
             return self._parse_instruments(self._get("market.instruments.all"))
 
-    def quote(self, *instruments):
+    def quote(self, exchange, tradingsymbol):
         """
         Retrieve quote for list of instruments.
 
         - `instruments` is a list of instruments, Instrument are in the format of `exchange:tradingsymbol`. For example NSE:INFY
         """
-        ins = list(instruments)
-
-        # If first element is a list then accept it as instruments list for legacy reason
-        if len(instruments) > 0 and type(instruments[0]) == list:
-            ins = instruments[0]
-
-        data = self._get("market.quote", params={"i": ins})
-        return {key: self._format_response(data[key]) for key in data}
+      
+        return self._get("market.quote",url_args={"exchange": exchange, "tradingsymbol": tradingsymbol})
 
     def ohlc(self, *instruments):
         """
@@ -877,6 +876,14 @@ class KiteConnect(object):
             query_params={"consider_positions": consider_positions, "mode": mode},
         )
 
+    def baskets(self):
+        """Fetch list of baskets"""
+        return self._get("baskets", required_api_key=False)
+
+    def market_watch_list(self):
+        """Fetch market watch list"""
+        return self._get("marketwatches.all", required_api_key=False)
+
     def get_virtual_contract_note(self, params):
         """
         Calculates detailed charges order-wise for the order book
@@ -952,10 +959,10 @@ class KiteConnect(object):
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__
 
-    def _get(self, route, url_args=None, params=None, is_json=False):
+    def _get(self, route, url_args=None, params=None, is_json=False, required_api_key=True):
         """Alias for sending a GET request."""
         return self._request(
-            route, "GET", url_args=url_args, params=params, is_json=is_json
+            route, "GET", url_args=url_args, params=params, is_json=is_json, required_api_key=required_api_key
         )
 
     def _post(
@@ -996,6 +1003,7 @@ class KiteConnect(object):
         params=None,
         is_json=False,
         query_params=None,
+        required_api_key=True,
     ):
         """Make an HTTP request."""
         # Form a restful URL
@@ -1009,7 +1017,7 @@ class KiteConnect(object):
         # Custom headers
         headers = {
             "X-Kite-Version": self.kite_header_version,
-            "User-Agent": self._user_agent(),
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         }
 
         if self.debug:
@@ -1024,7 +1032,9 @@ class KiteConnect(object):
             query_params = params
 
         try:
-            headers["Authorization"] = self.api_key
+            headers.update(self.headers)
+            if not required_api_key:
+                headers.pop("Authorization")
             r = self.reqsession.request(
                 method,
                 url,

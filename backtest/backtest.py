@@ -1,10 +1,10 @@
 import os
 import datetime as dt
 import pandas as pd
-import strategies as st
+import backtest.strategies as st
 
 from constants import kite
-from utils import KiteUtils as ktu
+from utils import kite_utils as ktu
 
 
 def search_entry(exchange, symbol, ohlc, holdings, strategy_func, account_value):
