@@ -25,36 +25,30 @@ def get_product_type() -> str:
 # KITE UTILS
 class KiteUtils:
     @staticmethod
-    def get_holding_by_symbol(symbol):
+    def get_holding_by_symbol(exchange, symbol):
         positions = [p for p in kite.positions()["net"] if p["quantity"] != 0]
         positions.extend(kite.holdings())
 
-        return first([p for p in positions if p["tradingsymbol"] == symbol])
+        return first([p for p in positions if p["tradingsymbol"] == symbol and p["exchange"] == exchange])
 
     @staticmethod
-    def get_instrument_token(exchange, symbol):
-        symbol = f"{exchange}:{symbol}"
-        return kite.ltp([symbol])[symbol]["instrument_token"]
-
-    @staticmethod
-    def get_ltp(exchange, symbol):
-        symbol = f"{exchange}:{symbol}"
-        return kite.ltp([symbol])[symbol]["last_price"]
-
-    @staticmethod
-    def get_historical_data(
-        exchange,
-        symbol,
-        interval,
-        from_date,
-        to_date,
-    ):
+    def get_ohlc(instrument_token, interval="5minute"):
         return kite.historical_data(
-            instrument_token=KiteUtils.get_instrument_token(exchange, symbol),
+            instrument_token=instrument_token,
             interval=interval,
-            from_date=from_date,
-            to_date=to_date,
+            from_date=dt.now() - td(days=7),
+            to_date=dt.now(),
+        )[-1]
+
+    @staticmethod
+    def get_ltp(instrument_token):
+        hd = kite.historical_data(
+            instrument_token=instrument_token,
+            interval="60minute",
+            from_date=dt.now() - td(days=7),
+            to_date=dt.now(),
         )
+        return last(hd)["close"]
 
     @staticmethod
     def get_order_status(order_id):

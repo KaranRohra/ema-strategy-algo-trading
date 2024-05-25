@@ -101,20 +101,20 @@ class KiteConnect(object):
         "api.token": "/session/token",
         "api.token.invalidate": "/session/token",
         "api.token.renew": "/session/refresh_token",
-        "user.profile": "/user/profile",
-        "user.margins": "/user/margins",
-        "user.margins.segment": "/user/margins/{segment}",
-        "orders": "/orders",
-        "trades": "/trades",
-        "order.info": "/orders/{order_id}",
-        "order.place": "/orders/{variety}",
-        "order.modify": "/orders/{variety}/{order_id}",
-        "order.cancel": "/orders/{variety}/{order_id}",
-        "order.trades": "/orders/{order_id}/trades",
-        "portfolio.positions": "/portfolio/positions",
-        "portfolio.holdings": "/portfolio/holdings",
-        "portfolio.holdings.auction": "/portfolio/holdings/auctions",
-        "portfolio.positions.convert": "/portfolio/positions",
+        "user.profile": "/oms/user/profile/full",
+        "user.margins": "/oms/user/margins",
+        "user.margins.segment": "/oms/user/margins/{segment}",
+        "orders": "/oms/orders",
+        "trades": "/oms/trades",
+        "order.info": "/oms/orders/{order_id}",
+        "order.place": "/oms/orders/{variety}",
+        "order.modify": "/oms/orders/{variety}/{order_id}",
+        "order.cancel": "/oms/orders/{variety}/{order_id}",
+        "order.trades": "/oms/orders/{order_id}/trades",
+        "portfolio.positions": "/oms/portfolio/positions",
+        "portfolio.holdings": "/oms/portfolio/holdings",
+        "portfolio.holdings.auction": "/oms/portfolio/holdings/auctions",
+        "portfolio.positions.convert": "/oms/portfolio/positions",
         # MF api endpoints
         "mf.orders": "/mf/orders",
         "mf.order.info": "/mf/orders/{order_id}",
@@ -130,21 +130,21 @@ class KiteConnect(object):
         "market.instruments.all": "/instruments",
         "market.instruments": "/instruments/{exchange}",
         "market.margins": "/margins/{segment}",
-        "market.historical": "/instruments/historical/{instrument_token}/{interval}",
-        "market.trigger_range": "/instruments/trigger_range/{transaction_type}",
-        "market.quote": "/quote",
+        "market.historical": "/oms/instruments/historical/{instrument_token}/{interval}",
+        "market.trigger_range": "/oms/instruments/trigger_range/{transaction_type}",
+        "market.quote": "/api/instruments/{exchange}/{tradingsymbol}",
         "market.quote.ohlc": "/quote/ohlc",
         "market.quote.ltp": "/quote/ltp",
         # GTT endpoints
-        "gtt": "/gtt/triggers",
-        "gtt.place": "/gtt/triggers",
-        "gtt.info": "/gtt/triggers/{trigger_id}",
-        "gtt.modify": "/gtt/triggers/{trigger_id}",
-        "gtt.delete": "/gtt/triggers/{trigger_id}",
+        "gtt": "/oms/gtt/triggers",
+        "gtt.place": "/oms/gtt/triggers",
+        "gtt.info": "/oms/gtt/triggers/{trigger_id}",
+        "gtt.modify": "/oms/gtt/triggers/{trigger_id}",
+        "gtt.delete": "/oms/gtt/triggers/{trigger_id}",
         # Margin computation endpoints
-        "order.margins": "/margins/orders",
-        "order.margins.basket": "/margins/basket",
-        "order.contract_note": "/charges/orders",
+        "order.margins": "/oms/margins/orders",
+        "order.margins.basket": "/oms/margins/basket",
+        "order.contract_note": "/oms/charges/orders",
     }
 
     def __init__(
@@ -1004,7 +1004,7 @@ class KiteConnect(object):
         else:
             uri = self._routes[route]
 
-        url = urljoin(self.root, "/oms" + uri)
+        url = urljoin(self.root, uri)
 
         # Custom headers
         headers = {
