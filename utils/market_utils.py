@@ -12,10 +12,11 @@ def is_market_open() -> bool:
     end_time = dt.strptime(environ[Env.END_TIME], TIME_FORMAT)
     end_time = end_time.replace(year=now.year, month=now.month, day=now.day)
 
-    market_open = start_time <= now <= end_time
-    if not market_open:
-        print(f"Market is closed: {now} - Market timings: {start_time} - {end_time}")
-    return market_open
+    return {
+        "start_time": start_time,
+        "end_time": end_time,
+        "is_market_open": start_time <= now <= end_time,
+    }
 
 
 def get_candle_interval(time_frame) -> str:

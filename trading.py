@@ -24,7 +24,7 @@ def search_trade(candle_interval, time_frame, symbol, exchange, instrument_token
     else:
         orders.search_entry(ohlc)
     print("*" * 20)
-    print(f"Waiting for next candle {now}")
+    print(f"Waiting for next candle - Current time: {now}")
 
 
 def start():
@@ -38,7 +38,7 @@ def start():
         f"Starting trading on {exchange} with {symbol} on {candle_interval} time frame"
     )
 
-    while market_utils.is_market_open():
+    while market_utils.is_market_open()["is_market_open"]:
         now = dt.now()
         if now.minute % 5 == 0 and now.second == 0:
             search_trade(
@@ -50,8 +50,11 @@ def start():
             )
         time.sleep(1)
 
-    if (
-        dt.now().minute >= dt.strptime(os.environ[Env.END_TIME], "%H:%M:%S").minute
+    market_status = market_utils.is_market_open()
+    if dt.now() >= market_status["end_time"] and dt.now() < market_status[
+        "end_time"
+    ].replace(
+        minute=market_status["end_time"].minute + 2
     ):  # Execute last trade before market closes
         search_trade(
             candle_interval,
@@ -60,3 +63,4 @@ def start():
             exchange,
             instrument_token,
         )
+    print("Market closed...")

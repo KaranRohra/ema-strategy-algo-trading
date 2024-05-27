@@ -6,6 +6,15 @@ from pytrendseries import detecttrend as pydt
 from constants import kite
 
 
+def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
+    cnt = 0
+    for i in range(len(ohlc) - 1, -1, -1):
+        if ohlc[i][left_key] <= ohlc[i][right_key]:
+            break
+        cnt += 1
+    return cnt
+
+
 def _strategy(ohlc: list):
     curr, n = ohlc[-1], len(ohlc)
     analysis = {
@@ -19,25 +28,10 @@ def _strategy(ohlc: list):
         "signal": None,
     }
 
-    for i in range(n - 1, -1, -1):
-        if ohlc[i]["close"] <= ohlc[i]["ema50"]:
-            break
-        analysis["candle_cnt_close_above_ema50"] += 1
-
-    for i in range(n - 1, -1, -1):
-        if ohlc[i]["close"] >= ohlc[i]["ema50"]:
-            break
-        analysis["candle_cnt_close_below_ema50"] += 1
-
-    for i in range(n - 1, -1, -1):
-        if ohlc[i]["ema50"] <= ohlc[i]["ema200"]:
-            break
-        analysis["candle_cnt_ema50_above_ema200"] += 1
-
-    for i in range(n - 1, -1, -1):
-        if ohlc[i]["ema50"] >= ohlc[i]["ema200"]:
-            break
-        analysis["candle_cnt_ema50_below_ema200"] += 1
+    analysis["candle_cnt_close_above_ema50"] = _cnt_above_below("close", "ema50", ohlc)
+    analysis["candle_cnt_close_below_ema50"] = _cnt_above_below("ema50", "close", ohlc)
+    analysis["candle_cnt_ema50_above_ema200"] = _cnt_above_below("ema50", "ema200", ohlc)
+    analysis["candle_cnt_ema50_below_ema200"] = _cnt_above_below("ema200", "ema50", ohlc)
 
     if (
         analysis["close_above_emas"]
@@ -67,8 +61,7 @@ def get_trend_analysis(price, trend, param_key):
         pd.DataFrame({"price": price}), trend=trend, limit=5, window=1000
     ).to_dict(orient="records")
     return {
-        f"is_{param_key}_in_{trend}": len(price) - 1
-        == last(price_trend)["index_to"],
+        f"is_{param_key}_in_{trend}": len(price) - 1 == last(price_trend)["index_to"],
     }
 
 
