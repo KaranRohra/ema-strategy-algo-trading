@@ -208,7 +208,6 @@ class KiteConnect(object):
         requests.packages.urllib3.disable_warnings()
     
     def get_required_headers(self, user_id, password, two_fa):
-        self._post()
         res = requests.post(
             url="https://kite.zerodha.com/api/login",
             data={"user_id": user_id, "password": password},
