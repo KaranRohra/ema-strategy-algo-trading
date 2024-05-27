@@ -49,7 +49,6 @@ def start():
                 instrument_token,
             )
         time.sleep(1)
-        break
 
     if (
         dt.now().minute >= dt.strptime(os.environ[Env.END_TIME], "%H:%M:%S").minute
