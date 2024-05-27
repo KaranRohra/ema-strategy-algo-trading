@@ -6,11 +6,9 @@ from kite.connect import KiteConnect
 dotenv.load_dotenv()
 
 kite = KiteConnect(
-    headers={
-        "Authorization": f"enctoken {os.environ['KITE_API_KEY']}",
-        "X-Csrftoken": os.environ["KITE_PUBLIC_TOKEN"],
-        "Cookie": os.environ["KITE_COOKIE"],
-    }
+    user_id=os.environ["KITE_USER_ID"],
+    password=os.environ["KITE_PASSWORD"],
+    two_fa=os.environ["KITE_TWO_FA"],
 )
 
 

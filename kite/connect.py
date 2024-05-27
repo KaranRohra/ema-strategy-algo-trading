@@ -152,6 +152,9 @@ class KiteConnect(object):
 
     def __init__(
         self,
+        user_id,
+        password,
+        two_fa,
         api_key=None,
         access_token=None,
         root=None,
@@ -160,7 +163,6 @@ class KiteConnect(object):
         proxies=None,
         pool=None,
         disable_ssl=False,
-        headers=None,
     ):
         """
         Initialise a new Kite Connect client instance.
@@ -190,7 +192,7 @@ class KiteConnect(object):
         self.disable_ssl = disable_ssl
         self.access_token = access_token
         self.proxies = proxies if proxies else {}
-        self.headers = headers if headers else {}
+        self.headers = self.get_required_headers(user_id, password, two_fa)
 
         self.root = root or self._default_root_uri
         self.timeout = timeout or self._default_timeout
@@ -204,6 +206,33 @@ class KiteConnect(object):
 
         # disable requests SSL warning
         requests.packages.urllib3.disable_warnings()
+    
+    def get_required_headers(self, user_id, password, two_fa):
+        self._post()
+        res = requests.post(
+            url="https://kite.zerodha.com/api/login",
+            data={"user_id": user_id, "password": password},
+        )
+        two_res = requests.post(
+            url="https://kite.zerodha.com/api/twofa",
+            data={
+                "user_id": "AXN756",
+                "request_id": res.json()["data"]["request_id"],
+                "twofa_value": two_fa,
+                "twofa_type": "totp",
+            },
+        )
+        _cfuvid = two_res.cookies["_cfuvid"]
+        kf_session = two_res.cookies["kf_session"]
+        __cf_bm = two_res.cookies["__cf_bm"]
+        public_token = two_res.cookies["public_token"]
+        enctoken = two_res.cookies["enctoken"]
+        
+        return {
+            "Authorization": "enctoken " + enctoken,
+            "X-Csrftoken": public_token,
+            "Cookie": f"_cfuvid={_cfuvid}; kf_session={kf_session}; __cf_bm={__cf_bm}; user_id={user_id}; public_token={public_token}; enctoken={enctoken}",
+        }
 
     def set_session_expiry_hook(self, method):
         """

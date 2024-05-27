@@ -58,7 +58,7 @@ def start():
     ):  # Execute last trade before market closes
         search_trade(
             candle_interval,
-            time_frame,
+            1,
             symbol,
             exchange,
             instrument_token,
