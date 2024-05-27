@@ -15,6 +15,7 @@ kite = KiteConnect(
 
 
 class Env:
+    SYSTEM = "SYSTEM"
     MONGO_URI = "MONGO_URI"
     MONGO_DB = "MONGO_DB"
     START_TIME = "START_TIME"
