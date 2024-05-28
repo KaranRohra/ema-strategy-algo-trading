@@ -20,8 +20,10 @@ def search_trade(candle_interval, time_frame, symbol, exchange, instrument_token
 
     holding = kite_utils.get_holding_by_symbol(exchange, symbol)
     if holding:
+        print("Searching for exit...")
         orders.search_exit(ohlc, holding)
     else:
+        print("Searching for entry...")
         orders.search_entry(ohlc)
     print("*" * 20)
     print(f"Waiting for next candle - Current time: {now}")

@@ -57,14 +57,13 @@ def search_entry(ohlc):
         "exchange": exchange,
         "from": ohlc[-1]["date"],
         "product": symbol_details["params"]["product"],
+        "quantity": symbol_details["params"]["quantity"],
         **signal_details,
     }
 
     if signal_details["signal"] == kite.TRANSACTION_TYPE_BUY:
-        holding["quantity"] = symbol_details["params"]["quantity"]
         holding["entry_price"] = ohlc[-1]["high"]
     else:
-        holding["quantity"] = -symbol_details["params"]["quantity"]
         holding["entry_price"] = ohlc[-1]["low"]
 
     order_detail = {
