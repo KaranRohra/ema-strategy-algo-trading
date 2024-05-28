@@ -98,6 +98,8 @@ class KiteConnect(object):
 
     # URIs to various calls
     _routes = {
+        "api.login": "/api/login",
+        "api.twofa": "/api/twofa",
         "api.token": "/session/token",
         "api.token.invalidate": "/session/token",
         "api.token.renew": "/session/refresh_token",
@@ -209,11 +211,11 @@ class KiteConnect(object):
     
     def get_required_headers(self, user_id, password, two_fa):
         res = requests.post(
-            url="https://kite.zerodha.com/api/login",
+            url=urljoin(self._default_root_uri, self._routes["api.login"]),
             data={"user_id": user_id, "password": password},
         )
         two_res = requests.post(
-            url="https://kite.zerodha.com/api/twofa",
+            url=urljoin(self._default_root_uri, self._routes["api.twofa"]),
             data={
                 "user_id": "AXN756",
                 "request_id": res.json()["data"]["request_id"],
@@ -642,14 +644,19 @@ class KiteConnect(object):
         else:
             return self._parse_instruments(self._get("market.instruments.all"))
 
-    def quote(self, exchange, tradingsymbol):
+    def quote(self, *instruments):
         """
         Retrieve quote for list of instruments.
-
         - `instruments` is a list of instruments, Instrument are in the format of `exchange:tradingsymbol`. For example NSE:INFY
         """
-      
-        return self._get("market.quote",url_args={"exchange": exchange, "tradingsymbol": tradingsymbol})
+        ins = list(instruments)
+
+        # If first element is a list then accept it as instruments list for legacy reason
+        if len(instruments) > 0 and type(instruments[0]) == list:
+            ins = instruments[0]
+
+        data = self._get("market.quote", params={"i": ins})
+        return {key: self._format_response(data[key]) for key in data}
 
     def ohlc(self, *instruments):
         """
