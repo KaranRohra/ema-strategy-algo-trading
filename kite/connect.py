@@ -226,7 +226,7 @@ class KiteConnect(object):
         __cf_bm = two_res.cookies["__cf_bm"]
         public_token = two_res.cookies["public_token"]
         enctoken = two_res.cookies["enctoken"]
-        
+        print("Successfully logged in...")
         return {
             "Authorization": "enctoken " + enctoken,
             "X-Csrftoken": public_token,
