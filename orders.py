@@ -1,7 +1,6 @@
 import strategy
 import time
 
-from os import environ
 from utils import kite_utils
 from constants import kite
 from db import MongoDB
@@ -100,7 +99,7 @@ def search_exit(ohlc, holding):
         product=holding["product"],
         variety=kite.VARIETY_REGULAR,
         transaction_type=signal,
-        quantity=holding["quantity"],
+        quantity=abs(holding["quantity"]),
         order_type=kite.ORDER_TYPE_MARKET,
         validity=kite.VALIDITY_DAY,
     )
