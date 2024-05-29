@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 class KiteConnect(object):
     # Default root API endpoint. It's possible to
     # override this by passing the `root` parameter during initialisation.
-    _default_root_uri = "https://api.kite.trade"
+    _default_root_uri = "https://kite.zerodha.com"
     _default_login_uri = "https://kite.zerodha.com/connect/login"
     _default_timeout = 7  # In seconds
 
@@ -98,23 +98,25 @@ class KiteConnect(object):
 
     # URIs to various calls
     _routes = {
+        "api.login": "/api/login",
+        "api.twofa": "/api/twofa",
         "api.token": "/session/token",
         "api.token.invalidate": "/session/token",
         "api.token.renew": "/session/refresh_token",
-        "user.profile": "/user/profile",
-        "user.margins": "/user/margins",
-        "user.margins.segment": "/user/margins/{segment}",
-        "orders": "/orders",
-        "trades": "/trades",
-        "order.info": "/orders/{order_id}",
-        "order.place": "/orders/{variety}",
-        "order.modify": "/orders/{variety}/{order_id}",
-        "order.cancel": "/orders/{variety}/{order_id}",
-        "order.trades": "/orders/{order_id}/trades",
-        "portfolio.positions": "/portfolio/positions",
-        "portfolio.holdings": "/portfolio/holdings",
-        "portfolio.holdings.auction": "/portfolio/holdings/auctions",
-        "portfolio.positions.convert": "/portfolio/positions",
+        "user.profile": "/oms/user/profile/full",
+        "user.margins": "/oms/user/margins",
+        "user.margins.segment": "/oms/user/margins/{segment}",
+        "orders": "/oms/orders",
+        "trades": "/oms/trades",
+        "order.info": "/oms/orders/{order_id}",
+        "order.place": "/oms/orders/{variety}",
+        "order.modify": "/oms/orders/{variety}/{order_id}",
+        "order.cancel": "/oms/orders/{variety}/{order_id}",
+        "order.trades": "/oms/orders/{order_id}/trades",
+        "portfolio.positions": "/oms/portfolio/positions",
+        "portfolio.holdings": "/oms/portfolio/holdings",
+        "portfolio.holdings.auction": "/oms/portfolio/holdings/auctions",
+        "portfolio.positions.convert": "/oms/portfolio/positions",
         # MF api endpoints
         "mf.orders": "/mf/orders",
         "mf.order.info": "/mf/orders/{order_id}",
@@ -130,26 +132,32 @@ class KiteConnect(object):
         "market.instruments.all": "/instruments",
         "market.instruments": "/instruments/{exchange}",
         "market.margins": "/margins/{segment}",
-        "market.historical": "/instruments/historical/{instrument_token}/{interval}",
-        "market.trigger_range": "/instruments/trigger_range/{transaction_type}",
-        "market.quote": "/quote",
+        "market.historical": "/oms/instruments/historical/{instrument_token}/{interval}",
+        "market.trigger_range": "/oms/instruments/trigger_range/{transaction_type}",
+        "market.quote": "/api/instruments/{exchange}/{tradingsymbol}",
         "market.quote.ohlc": "/quote/ohlc",
         "market.quote.ltp": "/quote/ltp",
         # GTT endpoints
-        "gtt": "/gtt/triggers",
-        "gtt.place": "/gtt/triggers",
-        "gtt.info": "/gtt/triggers/{trigger_id}",
-        "gtt.modify": "/gtt/triggers/{trigger_id}",
-        "gtt.delete": "/gtt/triggers/{trigger_id}",
+        "gtt": "/oms/gtt/triggers",
+        "gtt.place": "/oms/gtt/triggers",
+        "gtt.info": "/oms/gtt/triggers/{trigger_id}",
+        "gtt.modify": "/oms/gtt/triggers/{trigger_id}",
+        "gtt.delete": "/oms/gtt/triggers/{trigger_id}",
         # Margin computation endpoints
-        "order.margins": "/margins/orders",
-        "order.margins.basket": "/margins/basket",
-        "order.contract_note": "/charges/orders",
+        "order.margins": "/oms/margins/orders",
+        "order.margins.basket": "/oms/margins/basket",
+        "baskets": "/api/baskets",
+        "order.contract_note": "/oms/charges/orders",
+        # Market watch list endpoints
+        "marketwatches.all": "/api/marketwatch",
     }
 
     def __init__(
         self,
-        api_key,
+        user_id,
+        password,
+        two_fa,
+        api_key=None,
         access_token=None,
         root=None,
         debug=False,
@@ -186,6 +194,10 @@ class KiteConnect(object):
         self.disable_ssl = disable_ssl
         self.access_token = access_token
         self.proxies = proxies if proxies else {}
+        self.headers = self.get_required_headers(user_id, password, two_fa)
+        self.user_id = user_id
+        self.password = password
+        self.two_fa = two_fa
 
         self.root = root or self._default_root_uri
         self.timeout = timeout or self._default_timeout
@@ -199,6 +211,35 @@ class KiteConnect(object):
 
         # disable requests SSL warning
         requests.packages.urllib3.disable_warnings()
+
+    def reconnect(self):
+        self.headers = self.get_required_headers(self.user_id, self.password, self.two_fa)
+
+    def get_required_headers(self, user_id, password, two_fa):
+        res = requests.post(
+            url=urljoin(self._default_root_uri, self._routes["api.login"]),
+            data={"user_id": user_id, "password": password},
+        )
+        two_res = requests.post(
+            url=urljoin(self._default_root_uri, self._routes["api.twofa"]),
+            data={
+                "user_id": "AXN756",
+                "request_id": res.json()["data"]["request_id"],
+                "twofa_value": two_fa,
+                "twofa_type": "totp",
+            },
+        )
+        _cfuvid = two_res.cookies["_cfuvid"]
+        kf_session = two_res.cookies["kf_session"]
+        __cf_bm = two_res.cookies["__cf_bm"]
+        public_token = two_res.cookies["public_token"]
+        enctoken = two_res.cookies["enctoken"]
+        print("Successfully logged in...")
+        return {
+            "Authorization": "enctoken " + enctoken,
+            "X-Csrftoken": public_token,
+            "Cookie": f"_cfuvid={_cfuvid}; kf_session={kf_session}; __cf_bm={__cf_bm}; user_id={user_id}; public_token={public_token}; enctoken={enctoken}",
+        }
 
     def set_session_expiry_hook(self, method):
         """
@@ -612,7 +653,6 @@ class KiteConnect(object):
     def quote(self, *instruments):
         """
         Retrieve quote for list of instruments.
-
         - `instruments` is a list of instruments, Instrument are in the format of `exchange:tradingsymbol`. For example NSE:INFY
         """
         ins = list(instruments)
@@ -877,6 +917,14 @@ class KiteConnect(object):
             query_params={"consider_positions": consider_positions, "mode": mode},
         )
 
+    def baskets(self):
+        """Fetch list of baskets"""
+        return self._get("baskets", required_api_key=False)
+
+    def market_watch_list(self):
+        """Fetch market watch list"""
+        return self._get("marketwatches.all", required_api_key=False)
+
     def get_virtual_contract_note(self, params):
         """
         Calculates detailed charges order-wise for the order book
@@ -952,10 +1000,10 @@ class KiteConnect(object):
     def _user_agent(self):
         return (__title__ + "-python/").capitalize() + __version__
 
-    def _get(self, route, url_args=None, params=None, is_json=False):
+    def _get(self, route, url_args=None, params=None, is_json=False, required_api_key=True):
         """Alias for sending a GET request."""
         return self._request(
-            route, "GET", url_args=url_args, params=params, is_json=is_json
+            route, "GET", url_args=url_args, params=params, is_json=is_json, required_api_key=required_api_key
         )
 
     def _post(
@@ -996,6 +1044,7 @@ class KiteConnect(object):
         params=None,
         is_json=False,
         query_params=None,
+        required_api_key=True,
     ):
         """Make an HTTP request."""
         # Form a restful URL
@@ -1009,7 +1058,7 @@ class KiteConnect(object):
         # Custom headers
         headers = {
             "X-Kite-Version": self.kite_header_version,
-            "User-Agent": self._user_agent(),
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
         }
 
         if self.debug:
@@ -1024,7 +1073,9 @@ class KiteConnect(object):
             query_params = params
 
         try:
-            headers["Authorization"] = self.api_key
+            headers.update(self.headers)
+            if not required_api_key:
+                headers.pop("Authorization")
             r = self.reqsession.request(
                 method,
                 url,
