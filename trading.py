@@ -5,6 +5,7 @@ import time
 from constants import Env, kite
 from datetime import datetime as dt, timedelta
 from utils import kite_utils, market_utils
+from mail import app as ma
 
 
 def search_trade(candle_interval, time_frame, symbol, exchange, instrument_token):
@@ -36,8 +37,11 @@ def start():
 
     time_frame = os.environ[Env.TIME_FRAME]
     candle_interval = market_utils.get_candle_interval(time_frame)
-    print(
-        f"Starting trading on {exchange} with {symbol} on {candle_interval} time frame"
+
+    ma.send_trading_started_email(
+        exchange=exchange,
+        symbol=symbol,
+        time_frame=candle_interval,
     )
 
     while market_utils.is_market_open()["is_market_open"]:
@@ -65,4 +69,3 @@ def start():
             exchange,
             instrument_token,
         )
-    print("Market closed...")

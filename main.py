@@ -6,8 +6,8 @@ import trading
 import time
 import os
 
-from constants import Env
-
+from constants import Env, kite
+from mail import app as ma
 
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -15,4 +15,15 @@ if os.environ[Env.SYSTEM] == "ubuntu":
     time.tzset()
 
 if __name__ == "__main__":
-    trading.start()
+    error_caught = True
+    for _ in range(5):
+        try:
+            if error_caught:
+                error_caught = False
+                trading.start()
+        except Exception as e:
+            kite.reconnect()
+            ma.send_error_email(str(e))
+            error_caught = True
+
+    ma.send_trading_stop_email()

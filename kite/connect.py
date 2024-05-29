@@ -195,6 +195,9 @@ class KiteConnect(object):
         self.access_token = access_token
         self.proxies = proxies if proxies else {}
         self.headers = self.get_required_headers(user_id, password, two_fa)
+        self.user_id = user_id
+        self.password = password
+        self.two_fa = two_fa
 
         self.root = root or self._default_root_uri
         self.timeout = timeout or self._default_timeout
@@ -208,7 +211,10 @@ class KiteConnect(object):
 
         # disable requests SSL warning
         requests.packages.urllib3.disable_warnings()
-    
+
+    def reconnect(self):
+        self.headers = self.get_required_headers(self.user_id, self.password, self.two_fa)
+
     def get_required_headers(self, user_id, password, two_fa):
         res = requests.post(
             url=urljoin(self._default_root_uri, self._routes["api.login"]),
