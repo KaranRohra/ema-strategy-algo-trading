@@ -212,8 +212,8 @@ class KiteConnect(object):
         # disable requests SSL warning
         requests.packages.urllib3.disable_warnings()
 
-    def reconnect(self):
-        self.headers = self.get_required_headers(self.user_id, self.password, self.two_fa)
+    def reconnect(self, two_fa):
+        self.headers = self.get_required_headers(self.user_id, self.password, two_fa)
 
     def get_required_headers(self, user_id, password, two_fa):
         res = requests.post(

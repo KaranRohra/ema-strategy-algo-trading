@@ -5,6 +5,7 @@ dotenv.load_dotenv()
 import trading
 import time
 import os
+import pyotp
 
 from constants import Env, kite
 from mail import app as ma
@@ -22,7 +23,7 @@ if __name__ == "__main__":
                 error_caught = False
                 trading.start()
         except Exception as e:
-            kite.reconnect()
+            kite.reconnect(two_fa=pyotp.TOTP(os.environ["KITE_2FA_SECRET"]).now())
             ma.send_error_email(str(e))
             error_caught = True
 
