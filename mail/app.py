@@ -14,7 +14,7 @@ def send_email(subject, body, body_content_type="plain"):
     recipients = os.environ.get(Env.EMAIL_RECIPIENTS)
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = subject + " - " + dt.now().strftime("%d %b %Y")
+    msg["Subject"] = subject + " - " + dt.now().strftime("%d %b %Y, %I:%M:%S %p")
     msg["From"] = email_address
     msg["To"] = recipients
     msg.attach(MIMEText(body, body_content_type))
