@@ -2,7 +2,8 @@ import strategy
 import time
 
 from utils import kite_utils
-from constants import kite
+from constants import LogType
+from connection import kite
 from db import MongoDB
 
 
@@ -26,11 +27,20 @@ def place_entry_order(order_details, holding, instrument_token):
         time.sleep(1)
         wait_time -= 1
     if wait_time == 0:
-        print("Order not placed")
+        MongoDB.insert_log(
+            log_type=LogType.FAIL,
+            message="Order failed",
+            details={"status": "Candle high/low not break", **holding},
+        )
         return
     order_details["validity_ttl"] = wait_time // 60 + 1
     order_id = kite.place_order(**order_details)
-    print(f"Order placed: {order_id}")
+    MongoDB.insert_log(
+        log_type=LogType.SUCCESS,
+        message="Order placed successfully",
+        details={"order_id": order_id, **holding},
+    )
+
     while kite_utils.get_order_status(order_id)["status"] not in (
         kite.STATUS_COMPLETE,
         kite.STATUS_REJECTED,
@@ -40,12 +50,24 @@ def place_entry_order(order_details, holding, instrument_token):
 
     if kite_utils.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
         MongoDB.holdings.insert_one(holding)
-    print(f"Order executed: {order_id} - {kite_utils.get_order_status(order_id)}")
+        MongoDB.insert_log(
+            log_type=LogType.SUCCESS,
+            message="Order executed successfully",
+            details={"order_id": order_id, **holding},
+        )
+    else:
+        MongoDB.insert_log(
+            log_type=LogType.FAIL,
+            message="Order failed",
+            details={"order_id": order_id, **holding},
+        )
 
 
 def search_entry(ohlc):
     signal_details = strategy.get_entry_signal(ohlc)
-    print(f"Signal details: {signal_details}")
+    MongoDB.insert_log(
+        log_type=LogType.TRADE, message="Searching for entry...", details=signal_details
+    )
     if not signal_details["signal"]:
         return
     symbol_details = kite_utils.get_basket_item()
@@ -82,6 +104,11 @@ def search_entry(ohlc):
 
 def search_exit(ohlc, holding):
     signal = strategy.get_exit_signal(ohlc)
+    MongoDB.insert_log(
+        log_type=LogType.TRADE,
+        message="Searching for exit...",
+        details={"exit_signal": signal, **holding},
+    )
     if not signal:
         return
     if (
@@ -109,6 +136,14 @@ def search_exit(ohlc, holding):
     if kite_utils.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
         MongoDB.holdings.delete_one({"symbol": holding["tradingsymbol"]})
         MongoDB.trades.insert_one(holding)
-        print(f"Order executed successfully: {order_id}")
+        MongoDB.insert_log(
+            log_type=LogType.SUCCESS,
+            message="Order executed successfully",
+            details={"order_id": order_id, **holding},
+        )
     else:
-        print(f"Order failed: {order_id}")
+        MongoDB.insert_log(
+            log_type=LogType.FAIL,
+            message="Order failed",
+            details={"order_id": order_id, **holding},
+        )

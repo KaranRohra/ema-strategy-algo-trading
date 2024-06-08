@@ -3,7 +3,7 @@ import pandas as pd
 from utils.common import last
 
 from pytrendseries import detecttrend as pydt
-from constants import kite
+from connection import kite
 
 
 def _cnt_above_below(left_key: str, right_key: str, ohlc: list):

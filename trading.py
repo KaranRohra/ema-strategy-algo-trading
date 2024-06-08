@@ -2,10 +2,12 @@ import os
 import orders
 import time
 
-from constants import Env, kite
+from constants import Env, LogType
+from connection import kite
 from datetime import datetime as dt, timedelta
 from utils import kite_utils, market_utils
 from mail import app as ma
+from db import MongoDB
 
 
 def search_trade(candle_interval, time_frame, symbol, exchange, instrument_token):
@@ -21,13 +23,9 @@ def search_trade(candle_interval, time_frame, symbol, exchange, instrument_token
 
     holding = kite_utils.get_holding_by_symbol(exchange, symbol)
     if holding:
-        print("Searching for exit...")
         orders.search_exit(ohlc, holding)
     else:
-        print("Searching for entry...")
         orders.search_entry(ohlc)
-    print("*" * 20)
-    print(f"Waiting for next candle - Current time: {now}")
 
 
 def start():
@@ -43,6 +41,7 @@ def start():
         symbol=symbol,
         time_frame=candle_interval,
     )
+    MongoDB.insert_log(log_type=LogType.INFO, message="Trading started")
 
     while market_utils.is_market_open()["is_market_open"]:
         now = dt.now()

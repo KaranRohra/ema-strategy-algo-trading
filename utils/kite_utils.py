@@ -1,5 +1,5 @@
 from utils.common import first
-from constants import kite
+from connection import kite
 from datetime import datetime as dt, timedelta as td
 
 

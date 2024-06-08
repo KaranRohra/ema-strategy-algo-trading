@@ -1,9 +1,8 @@
-import os
 import datetime as dt
 import pandas as pd
 import backtest.strategies as st
 
-from constants import kite
+from connection import kite
 from utils import kite_utils as ktu
 
 
