@@ -1,3 +1,4 @@
+from db import MongoDB
 import ta.trend as trend, os
 import pandas as pd
 from datetime import datetime as dt, timedelta as td
@@ -80,6 +81,6 @@ def dump_ema_analysis_data(ema_value):
     pd.DataFrame(hd).to_csv(f"./analysis/nifty50/{ema_key}_analysis.csv", index=False)
 
 
-# combine_ema_data()
-# # print([*[1, 3], *[2, 3, 4]])
+combine_ema_data()
+# print([*[1, 3], *[2, 3, 4]])
 

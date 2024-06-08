@@ -9,6 +9,8 @@ from mail.html_template import table_with_two_columns
 
 
 def send_email(subject, body, body_content_type="plain"):
+    if os.environ.get(Env.SEND_EMAIL) == "0":
+        return
     email_address = os.environ.get(Env.EMAIL_ADDRESS)
     password = os.environ.get(Env.EMAIL_PASSWORD)
     recipients = os.environ.get(Env.EMAIL_RECIPIENTS)

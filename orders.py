@@ -64,14 +64,16 @@ def place_entry_order(order_details, holding, instrument_token):
 
 
 def search_entry(ohlc):
+    symbol_details = kite_utils.get_basket_item()
+    symbol, exchange = symbol_details["tradingsymbol"], symbol_details["exchange"]
     signal_details = strategy.get_entry_signal(ohlc)
     MongoDB.insert_log(
-        log_type=LogType.TRADE, message="Searching for entry...", details=signal_details
+        log_type=LogType.TRADE,
+        message="Searching for entry",
+        details={"symbol": symbol, "exchange": exchange, **signal_details},
     )
     if not signal_details["signal"]:
         return
-    symbol_details = kite_utils.get_basket_item()
-    symbol, exchange = symbol_details["tradingsymbol"], symbol_details["exchange"]
 
     holding = {
         "symbol": symbol,
@@ -79,6 +81,7 @@ def search_entry(ohlc):
         "from": ohlc[-1]["date"],
         "product": symbol_details["params"]["product"],
         "quantity": symbol_details["params"]["quantity"],
+        "ltp": ohlc[-1]["close"],
         **signal_details,
     }
 
@@ -106,8 +109,16 @@ def search_exit(ohlc, holding):
     signal = strategy.get_exit_signal(ohlc)
     MongoDB.insert_log(
         log_type=LogType.TRADE,
-        message="Searching for exit...",
-        details={"exit_signal": signal, **holding},
+        message="Searching for exit",
+        details={
+            "symbol": holding["tradingsymbol"],
+            "exchange": holding["exchange"],
+            "quantity": holding["quantity"],
+            "exit_signal": signal,
+        },
+    )
+    MongoDB.holdings.update_many(
+        {"symbol": holding["tradingsymbol"]}, {"$set": {"ltp": ohlc[-1]["close"]}}
     )
     if not signal:
         return
@@ -134,6 +145,10 @@ def search_exit(ohlc, holding):
     holding["to"] = ohlc[-1]["date"]
 
     if kite_utils.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
+        entry_signal_details = MongoDB.holdings.find_one(
+            {"symbol": holding["tradingsymbol"]}
+        )
+        holding.update(entry_signal_details)
         MongoDB.holdings.delete_one({"symbol": holding["tradingsymbol"]})
         MongoDB.trades.insert_one(holding)
         MongoDB.insert_log(
