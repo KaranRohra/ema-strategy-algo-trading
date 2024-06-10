@@ -1,8 +1,9 @@
 import strategy
 import time
+import os
 
-from utils import kite_utils
-from constants import LogType
+from utils import kite_utils as ku
+from constants import LogType, Env
 from connection import kite
 from db import MongoDB
 
@@ -11,7 +12,7 @@ def place_entry_order(order_details, holding, instrument_token):
     tran_type = order_details["transaction_type"]
     wait_time = 9 * 60
     while wait_time > 0:
-        ohlc = kite_utils.get_ohlc(instrument_token)
+        ohlc = ku.get_ohlc(instrument_token)
         if (
             tran_type == kite.TRANSACTION_TYPE_BUY
             and ohlc["high"] > order_details["price"]
@@ -41,14 +42,14 @@ def place_entry_order(order_details, holding, instrument_token):
         details={"order_id": order_id, **holding},
     )
 
-    while kite_utils.get_order_status(order_id)["status"] not in (
+    while ku.get_order_status(order_id)["status"] not in (
         kite.STATUS_COMPLETE,
         kite.STATUS_REJECTED,
         kite.STATUS_CANCELLED,
     ):
         time.sleep(10)
 
-    if kite_utils.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
+    if ku.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
         MongoDB.holdings.insert_one(holding)
         MongoDB.insert_log(
             log_type=LogType.SUCCESS,
@@ -63,9 +64,14 @@ def place_entry_order(order_details, holding, instrument_token):
         )
 
 
-def search_entry(ohlc):
-    symbol_details = kite_utils.get_basket_item()
+def search_entry(symbol_details):
     symbol, exchange = symbol_details["tradingsymbol"], symbol_details["exchange"]
+    instrument_token = symbol_details["instrument_token"]
+    time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
+    ohlc = ku.get_historical_data(
+        instrument_token, ku.get_candle_interval(time_frame), int(time_frame)
+    )
+
     signal_details = strategy.get_entry_signal(ohlc)
     MongoDB.insert_log(
         log_type=LogType.TRADE,
@@ -78,7 +84,7 @@ def search_entry(ohlc):
     holding = {
         "symbol": symbol,
         "exchange": exchange,
-        "from": ohlc[-1]["date"],
+        "from": str(ohlc[-1]["date"]),
         "product": symbol_details["params"]["product"],
         "quantity": symbol_details["params"]["quantity"],
         "ltp": ohlc[-1]["close"],
@@ -102,10 +108,14 @@ def search_entry(ohlc):
         "validity": kite.VALIDITY_TTL,
     }
 
-    place_entry_order(order_detail, holding, symbol_details["instrument_token"])
+    place_entry_order(order_detail, holding, instrument_token)
 
 
-def search_exit(ohlc, holding):
+def search_exit(holding):
+    time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
+    ohlc = ku.get_historical_data(
+        holding["instrument_token"], ku.get_candle_interval(time_frame), int(time_frame)
+    )
     signal = strategy.get_exit_signal(ohlc)
     MongoDB.insert_log(
         log_type=LogType.TRADE,
@@ -114,6 +124,7 @@ def search_exit(ohlc, holding):
             "symbol": holding["tradingsymbol"],
             "exchange": holding["exchange"],
             "quantity": holding["quantity"],
+            "ltp": ohlc[-1]["close"],
             "exit_signal": signal,
         },
     )
@@ -123,11 +134,11 @@ def search_exit(ohlc, holding):
     if not signal:
         return
     if (
-        signal == kite.TRANSACTION_TYPE_BUY and holding["quantity"] > 0
+        signal == kite.TRANSACTION_TYPE_BUY and holding["quantity"] >= 0
     ):  # If we have bought and signal is to exit buy position
         return
     if (
-        signal == kite.TRANSACTION_TYPE_SELL and holding["quantity"] < 0
+        signal == kite.TRANSACTION_TYPE_SELL and holding["quantity"] <= 0
     ):  # If we have sold and signal is to exit sell position
         return
 
@@ -142,9 +153,9 @@ def search_exit(ohlc, holding):
         validity=kite.VALIDITY_DAY,
     )
 
-    holding["to"] = ohlc[-1]["date"]
+    holding["to"] = str(ohlc[-1]["date"])
 
-    if kite_utils.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
+    if ku.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
         entry_signal_details = MongoDB.holdings.find_one(
             {"symbol": holding["tradingsymbol"]}
         )

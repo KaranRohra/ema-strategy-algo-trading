@@ -10,14 +10,13 @@ class MongoDB:
     _db = _client[environ[Env.MONGO_DB]]
     trades = _db["trades"]
     holdings = _db["holdings"]
-    candles = _db["candles"]
     logs = _db["logs"]
 
     @staticmethod
     def insert_log(log_type, message, details={}):
         MongoDB.logs.insert_one(
             {
-                "timestamp": dt.now(),
+                "timestamp": str(dt.now()),
                 "logType": log_type,
                 "message": message,
                 "details": details,

@@ -24,6 +24,17 @@ def get_ohlc(instrument_token, interval="5minute"):
         to_date=dt.now(),
     )[-1]
 
+def get_historical_data(instrument_token, interval, mod):
+    now = dt.now()
+    from_date = now - td(days=80)
+    to_date = now.replace(minute=now.minute - now.minute % mod)
+    return kite.historical_data(
+        instrument_token=instrument_token,
+        interval=interval,
+        from_date=from_date,
+        to_date=to_date,
+    )
+
 
 def get_order_status(order_id):
     return first([o for o in kite.orders() if o["order_id"] == order_id])
@@ -31,3 +42,15 @@ def get_order_status(order_id):
 
 def get_basket_item():
     return first([b for b in kite.baskets() if b["name"] == "algo-trading"])["items"][0]
+
+
+def get_candle_interval(time_frame) -> str:
+    return {
+        1: "minute",
+        3: "3minute",
+        5: "5minute",
+        10: "10minute",
+        15: "15minute",
+        30: "30minute",
+        60: "60minute",
+    }[time_frame]

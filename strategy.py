@@ -16,7 +16,7 @@ def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
 
 
 def _strategy(ohlc: list):
-    curr, n = ohlc[-1], len(ohlc)
+    curr = ohlc[-1]
     analysis = {
         "close_above_emas": curr["close"] > curr["ema50"] > curr["ema200"],
         "close_below_emas": curr["close"] < curr["ema50"] < curr["ema200"],
@@ -26,6 +26,7 @@ def _strategy(ohlc: list):
         "candle_cnt_ema50_above_ema200": 0,
         "candle_cnt_ema50_below_ema200": 0,
         "signal": None,
+        "date": str(curr["date"]),
     }
 
     analysis["candle_cnt_close_above_ema50"] = _cnt_above_below("close", "ema50", ohlc)
