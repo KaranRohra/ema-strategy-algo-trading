@@ -112,7 +112,7 @@ def search_entry(symbol_details):
 
 
 def search_exit(holding):
-    time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
+    time_frame = int(os.environ[Env.EXIT_TIME_FRAME])
     ohlc = ku.get_historical_data(
         holding["instrument_token"], ku.get_candle_interval(time_frame), int(time_frame)
     )
