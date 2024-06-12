@@ -2,6 +2,7 @@ import pymongo
 
 from os import environ
 from constants import Env
+from datetime import datetime as dt
 
 
 class MongoDB:
@@ -9,4 +10,15 @@ class MongoDB:
     _db = _client[environ[Env.MONGO_DB]]
     trades = _db["trades"]
     holdings = _db["holdings"]
-    candles = _db["candles"]
+    logs = _db["logs"]
+
+    @staticmethod
+    def insert_log(log_type, message, details={}):
+        MongoDB.logs.insert_one(
+            {
+                "timestamp": str(dt.now()),
+                "logType": log_type,
+                "message": message,
+                "details": details,
+            }
+        )

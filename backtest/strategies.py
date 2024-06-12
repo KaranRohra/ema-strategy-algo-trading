@@ -1,4 +1,4 @@
-from constants import kite
+from connection import kite
 
 def s7(ohlc: list):
     curr, n = ohlc[-1], len(ohlc)

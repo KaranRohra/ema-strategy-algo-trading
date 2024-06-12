@@ -18,15 +18,3 @@ def is_market_open() -> bool:
         "is_market_open": start_time <= now <= end_time,
     }
 
-
-def get_candle_interval(time_frame) -> str:
-    return {
-        "1": "minute",
-        "day": "day",
-        "3": "3minute",
-        "5": "5minute",
-        "10": "10minute",
-        "15": "15minute",
-        "30": "30minute",
-        "60": "60minute",
-    }[time_frame]
