@@ -18,7 +18,7 @@ def trading_start_notification(exchange, symbol):
     }
     ma.send_trading_started_email(**trade_details)
     MongoDB.insert_log(
-        log_type=LogType.INFO, message="Trading started", details=trade_details
+        log_type=LogType.INFO, message="Trading started"
     )
 
 
