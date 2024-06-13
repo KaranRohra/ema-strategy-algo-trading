@@ -5,7 +5,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from constants import Env
 from datetime import datetime as dt
-from mail.html_template import table_with_two_columns
+from mail import html_template as ht
 
 
 def send_email(subject, body, body_content_type="plain"):
@@ -38,7 +38,7 @@ def send_trading_stop_email():
     send_email(subject, body)
 
 
-def send_trading_started_email(**kwargs):
+def send_trading_started_email(args):
     subject = f"Algo Trading - Trading Started"
-    body = table_with_two_columns(kwargs)
+    body = ht.multiple_table(args)
     send_email(subject, body, "html")
