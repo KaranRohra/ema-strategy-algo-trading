@@ -33,7 +33,7 @@ def trading_start_notification(basket_items):
 
     ma.send_trading_started_email(trade_details_lst)
     MongoDB.insert_log(
-        log_type=LogType.INFO, message="Trading started", details=trade_details_lst
+        log_type=LogType.INFO, message="Trading started"
     )
 
 
