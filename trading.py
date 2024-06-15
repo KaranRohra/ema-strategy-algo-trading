@@ -46,6 +46,12 @@ def start():
 
     while mu.is_market_open()["is_market_open"]:
         now = dt.now()
+        if now.minute % 2 == 0 and now.second == 1:
+            basket_items_updated = kite_utils.get_basket_items()
+            if str(basket_items) != str(basket_items_updated):
+                basket_items = basket_items_updated
+                trading_start_notification(basket_items)
+
         for sd in basket_items:  # SD = Symbol Details
             exchange, symbol = sd["exchange"], sd["tradingsymbol"]
             if now.minute % entry_time_frame == 0 and now.second == 0:
