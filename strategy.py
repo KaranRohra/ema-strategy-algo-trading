@@ -100,8 +100,9 @@ def get_entry_signal(ohlc: list):
 def get_exit_signal(ohlc: list):
     close = [c["close"] for c in ohlc]
     close_series = pd.Series(close)
+    ema20 = trend.ema_indicator(close_series, window=20).tolist()[-1]
     ema200 = trend.ema_indicator(close_series, window=200).tolist()[-1]
 
     return (
-        kite.TRANSACTION_TYPE_SELL if close[-1] < ema200 else kite.TRANSACTION_TYPE_BUY
+        kite.TRANSACTION_TYPE_SELL if ema20 < ema200 else kite.TRANSACTION_TYPE_BUY
     )
