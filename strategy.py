@@ -1,7 +1,8 @@
 import ta.trend as trend
 import pandas as pd
-from utils.common import last
+import pandas_ta as pta
 
+from utils.common import last
 from pytrendseries import detecttrend as pydt
 from connection import kite
 
@@ -15,24 +16,31 @@ def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
     return cnt
 
 
+def get_supertrend_direction(ohlc: list):
+    ohlc_df = pd.DataFrame(ohlc)
+    return pta.supertrend(
+        high=ohlc_df["high"],
+        low=ohlc_df["low"],
+        close=ohlc_df["close"],
+        length=10,
+        multiplier=3,
+    ).to_dict("records")[-1]["SUPERTd_10_3.0"]
+
+
 def _strategy(ohlc: list):
     curr = ohlc[-1]
     analysis = {
         "close_above_emas": curr["close"] > curr["ema50"] > curr["ema200"],
         "close_below_emas": curr["close"] < curr["ema50"] < curr["ema200"],
         **curr,
-        "candle_cnt_close_above_ema50": 0,
-        "candle_cnt_close_below_ema50": 0,
-        "candle_cnt_ema50_above_ema200": 0,
-        "candle_cnt_ema50_below_ema200": 0,
+        "candle_cnt_close_above_ema50": _cnt_above_below("close", "ema50", ohlc),
+        "candle_cnt_close_below_ema50": _cnt_above_below("ema50", "close", ohlc),
+        "candle_cnt_ema50_above_ema200": _cnt_above_below("ema50", "ema200", ohlc),
+        "candle_cnt_ema50_below_ema200": _cnt_above_below("ema200", "ema50", ohlc),
+        "supertrend_dir": get_supertrend_direction(ohlc),
         "signal": None,
         "date": str(curr["date"]),
     }
-
-    analysis["candle_cnt_close_above_ema50"] = _cnt_above_below("close", "ema50", ohlc)
-    analysis["candle_cnt_close_below_ema50"] = _cnt_above_below("ema50", "close", ohlc)
-    analysis["candle_cnt_ema50_above_ema200"] = _cnt_above_below("ema50", "ema200", ohlc)
-    analysis["candle_cnt_ema50_below_ema200"] = _cnt_above_below("ema200", "ema50", ohlc)
 
     if (
         analysis["close_above_emas"]
@@ -41,6 +49,7 @@ def _strategy(ohlc: list):
         and analysis["is_ema200_in_uptrend"]
         and analysis["candle_cnt_close_above_ema50"] >= 5
         and analysis["candle_cnt_ema50_above_ema200"] >= 5
+        and analysis["supertrend_dir"] == 1
     ):
         analysis["signal"] = kite.TRANSACTION_TYPE_BUY
 
@@ -51,6 +60,7 @@ def _strategy(ohlc: list):
         and analysis["is_ema200_in_downtrend"]
         and analysis["candle_cnt_close_below_ema50"] >= 5
         and analysis["candle_cnt_ema50_below_ema200"] >= 5
+        and analysis["supertrend_dir"] == -1
     ):
         analysis["signal"] = kite.TRANSACTION_TYPE_SELL
 
@@ -103,6 +113,4 @@ def get_exit_signal(ohlc: list):
     ema20 = trend.ema_indicator(close_series, window=20).tolist()[-1]
     ema200 = trend.ema_indicator(close_series, window=200).tolist()[-1]
 
-    return (
-        kite.TRANSACTION_TYPE_SELL if ema20 < ema200 else kite.TRANSACTION_TYPE_BUY
-    )
+    return kite.TRANSACTION_TYPE_SELL if ema20 < ema200 else kite.TRANSACTION_TYPE_BUY
