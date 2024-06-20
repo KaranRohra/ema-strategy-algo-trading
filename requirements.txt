@@ -4,3 +4,4 @@ ta
 python-dotenv
 pymongo
 pyotp
+pandas-ta
