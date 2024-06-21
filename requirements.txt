@@ -38,7 +38,6 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 pytrendseries==0.1.9
 pytz==2024.1
-pywin32==306
 requests==2.32.3
 service-identity==24.1.0
 six==1.16.0
