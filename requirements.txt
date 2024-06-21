@@ -4,4 +4,4 @@ kiteconnect
 python-dotenv
 pymongo
 pyotp
-numpy==1.15.1
+numpy==1.26.4
