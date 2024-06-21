@@ -1,6 +1,6 @@
-pytrendseries
-kiteconnect
-python-dotenv
-pymongo
-pyotp
-pandas-ta
+pytrendseries==0.1.9
+kiteconnect==5.0.1
+python-dotenv==1.0.1
+pymongo==4.7.3
+pyotp==2.9.0
+pandas-ta==0.3.14b0
