@@ -77,9 +77,9 @@ def get_trend_analysis(price, trend, param_key):
 
 def get_entry_signal(ohlc: list):
     close_series = pd.DataFrame(ohlc)['close']
-    ema20 = ta.ema(close_series, window=20).tolist()
-    ema50 = ta.ema(close_series, window=50).tolist()
-    ema200 = ta.ema(close_series, window=200).tolist()
+    ema20 = ta.ema(close_series, length=20).tolist()
+    ema50 = ta.ema(close_series, length=50).tolist()
+    ema200 = ta.ema(close_series, length=200).tolist()
 
     ohlc[-1].update(
         {
@@ -107,7 +107,7 @@ def get_entry_signal(ohlc: list):
 
 def get_exit_signal(ohlc: list):
     close_series = pd.DataFrame(ohlc)['close']
-    ema20 = ta.ema(close_series, window=20).tolist()[-1]
-    ema200 = ta.ema(close_series, window=200).tolist()[-1]
+    ema20 = ta.ema(close_series, length=20).tolist()[-1]
+    ema200 = ta.ema(close_series, length=200).tolist()[-1]
 
     return kite.TRANSACTION_TYPE_SELL if ema20 < ema200 else kite.TRANSACTION_TYPE_BUY
