@@ -12,7 +12,11 @@ from datetime import datetime as dt, timedelta as td
 def place_entry_order(order_details, holding, instrument_token):
     tran_type = order_details["transaction_type"]
     now = dt.now()
-    valid_till = now + td(minutes=14)
+    wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
+    end_minutes = (wait_time * 10) // 10
+    end_seconds = (wait_time * 10) % 10
+    valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
+
     while now < valid_till:
         ohlc = ku.get_ohlc(instrument_token)
         if (
