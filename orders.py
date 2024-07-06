@@ -6,12 +6,18 @@ from utils import kite_utils as ku
 from constants import LogType, Env
 from connection import kite
 from db import MongoDB
+from datetime import datetime as dt, timedelta as td
 
 
 def place_entry_order(order_details, holding, instrument_token):
     tran_type = order_details["transaction_type"]
-    wait_time = 9 * 60
-    while wait_time > 0:
+    now = dt.now()
+    wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
+    end_minutes = (wait_time * 10) // 10
+    end_seconds = (wait_time * 10) % 10
+    valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
+
+    while now < valid_till:
         ohlc = ku.get_ohlc(instrument_token)
         if (
             tran_type == kite.TRANSACTION_TYPE_BUY
@@ -25,16 +31,16 @@ def place_entry_order(order_details, holding, instrument_token):
         ):
             order_details["price"] = holding["entry_price"] = ohlc["low"]
             break
+        now = dt.now()
         time.sleep(1)
-        wait_time -= 1
-    if wait_time == 0:
+    if now >= valid_till:
         MongoDB.insert_log(
             log_type=LogType.FAIL,
             message="Order failed",
             details={"status": "Candle high/low not break", **holding},
         )
         return
-    order_details["validity_ttl"] = wait_time // 60 + 1
+    order_details["validity_ttl"] = int(str(dt.now() - valid_till).split(":")[1]) + 1
     order_id = kite.place_order(**order_details)
     MongoDB.insert_log(
         log_type=LogType.SUCCESS,

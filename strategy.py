@@ -1,7 +1,7 @@
-import ta.trend as trend
 import pandas as pd
-from utils.common import last
+import pandas_ta as ta
 
+from utils.common import last
 from pytrendseries import detecttrend as pydt
 from connection import kite
 
@@ -21,18 +21,13 @@ def _strategy(ohlc: list):
         "close_above_emas": curr["close"] > curr["ema50"] > curr["ema200"],
         "close_below_emas": curr["close"] < curr["ema50"] < curr["ema200"],
         **curr,
-        "candle_cnt_close_above_ema50": 0,
-        "candle_cnt_close_below_ema50": 0,
-        "candle_cnt_ema50_above_ema200": 0,
-        "candle_cnt_ema50_below_ema200": 0,
+        "candle_cnt_close_above_ema50": _cnt_above_below("close", "ema50", ohlc),
+        "candle_cnt_close_below_ema50": _cnt_above_below("ema50", "close", ohlc),
+        "candle_cnt_ema50_above_ema200": _cnt_above_below("ema50", "ema200", ohlc),
+        "candle_cnt_ema50_below_ema200": _cnt_above_below("ema200", "ema50", ohlc),
         "signal": None,
         "date": str(curr["date"]),
     }
-
-    analysis["candle_cnt_close_above_ema50"] = _cnt_above_below("close", "ema50", ohlc)
-    analysis["candle_cnt_close_below_ema50"] = _cnt_above_below("ema50", "close", ohlc)
-    analysis["candle_cnt_ema50_above_ema200"] = _cnt_above_below("ema50", "ema200", ohlc)
-    analysis["candle_cnt_ema50_below_ema200"] = _cnt_above_below("ema200", "ema50", ohlc)
 
     if (
         analysis["close_above_emas"]
@@ -67,11 +62,10 @@ def get_trend_analysis(price, trend, param_key):
 
 
 def get_entry_signal(ohlc: list):
-    close = [c["close"] for c in ohlc]
-    close_series = pd.Series(close)
-    ema20 = trend.ema_indicator(close_series, window=20).tolist()
-    ema50 = trend.ema_indicator(close_series, window=50).tolist()
-    ema200 = trend.ema_indicator(close_series, window=200).tolist()
+    close_series = pd.DataFrame(ohlc)["close"]
+    ema20 = ta.ema(close_series, length=20).tolist()
+    ema50 = ta.ema(close_series, length=50).tolist()
+    ema200 = ta.ema(close_series, length=200).tolist()
 
     ohlc[-1].update(
         {
@@ -98,10 +92,10 @@ def get_entry_signal(ohlc: list):
 
 
 def get_exit_signal(ohlc: list):
-    close = [c["close"] for c in ohlc]
-    close_series = pd.Series(close)
-    ema200 = trend.ema_indicator(close_series, window=200).tolist()[-1]
+    close_series = pd.DataFrame(ohlc)["close"]
+    curr_close = ohlc[-1]["close"]
+    ema200 = ta.ema(close_series, length=200).tolist()[-1]
 
     return (
-        kite.TRANSACTION_TYPE_SELL if close[-1] < ema200 else kite.TRANSACTION_TYPE_BUY
+        kite.TRANSACTION_TYPE_SELL if curr_close < ema200 else kite.TRANSACTION_TYPE_BUY
     )

@@ -1,6 +1,7 @@
 pytrendseries
+pandas-ta
 kiteconnect
-ta
 python-dotenv
 pymongo
 pyotp
+numpy==1.26.4
