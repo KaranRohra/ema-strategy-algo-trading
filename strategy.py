@@ -8,7 +8,7 @@ from connection import kite
 
 def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
     cnt = 0
-    for i in range(len(ohlc) - 1, -30, -1):
+    for i in range(len(ohlc) - 1, -1, -1):
         if ohlc[i][left_key] <= ohlc[i][right_key]:
             break
         cnt += 1
