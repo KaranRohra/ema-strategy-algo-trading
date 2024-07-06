@@ -8,7 +8,7 @@ from connection import kite
 
 def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
     cnt = 0
-    for i in range(len(ohlc) - 1, -1, -1):
+    for i in range(len(ohlc) - 1, -30, -1):
         if ohlc[i][left_key] <= ohlc[i][right_key]:
             break
         cnt += 1
@@ -29,14 +29,13 @@ def get_supertrend_direction(ohlc: list):
 def _strategy(ohlc: list):
     curr = ohlc[-1]
     analysis = {
-        "close_above_emas": curr["close"] > curr["ema50"] > curr["ema200"],
-        "close_below_emas": curr["close"] < curr["ema50"] < curr["ema200"],
+        "close_above_emas": curr["close"] > curr["ema20"] > curr["ema50"] > curr["ema200"],
+        "close_below_emas": curr["close"] < curr["ema20"] < curr["ema50"] < curr["ema200"],
         **curr,
         "candle_cnt_close_above_ema50": _cnt_above_below("close", "ema50", ohlc),
         "candle_cnt_close_below_ema50": _cnt_above_below("ema50", "close", ohlc),
         "candle_cnt_ema50_above_ema200": _cnt_above_below("ema50", "ema200", ohlc),
         "candle_cnt_ema50_below_ema200": _cnt_above_below("ema200", "ema50", ohlc),
-        "supertrend_dir": get_supertrend_direction(ohlc),
         "signal": None,
         "date": str(curr["date"]),
     }
@@ -89,6 +88,7 @@ def get_entry_signal(ohlc: list):
             **get_trend_analysis(ema20, "downtrend", "ema20"),
             **get_trend_analysis(ema50, "downtrend", "ema50"),
             **get_trend_analysis(ema200, "downtrend", "ema200"),
+            "supertrend_dir": get_supertrend_direction(ohlc),
         }
     )
 
