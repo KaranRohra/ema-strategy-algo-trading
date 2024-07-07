@@ -6,11 +6,20 @@ import trading
 import time
 import os
 import pyotp
+import traceback
 
 from constants import Env, LogType
 from connection import kite
 from db import MongoDB
 from mail import app as ma
+
+
+def notify_error_details(e):
+    MongoDB.insert_log(log_type=LogType.ERROR, message=str(e))
+    error_details = {"type": type(e).__name__, "message": str(e)}
+    traceback_details = traceback.format_exc()
+    subject = f"Error Report: {error_details['type']} in your script"
+    ma.send_error_email(subject, error_details, traceback_details)
 
 
 os.environ["TZ"] = "Asia/Kolkata"
@@ -25,9 +34,8 @@ if __name__ == "__main__":
                 error_caught = False
                 trading.start()
         except Exception as e:
-            MongoDB.insert_log(log_type=LogType.ERROR, message=str(e))
             kite.reconnect(two_fa=pyotp.TOTP(os.environ[Env.KITE_2FA_SECRET]).now())
-            ma.send_error_email(str(e))
+            notify_error_details(e)
             error_caught = True
 
     MongoDB.insert_log(log_type=LogType.INFO, message="Trading stopped")

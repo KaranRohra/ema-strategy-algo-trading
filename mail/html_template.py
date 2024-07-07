@@ -1,3 +1,6 @@
+from mail import style
+
+
 def base_html(body, style):
     return f"""<html>
             <head>
@@ -66,6 +69,27 @@ def style_table():
             color: #333;
         }}
     """
+
+
+def error_template(error_details, traceback_details):
+    body = f"""
+        <div class="container">
+            <h1>Error Report</h1>
+            <p>Dear Team,</p>
+            <p>An error has occurred in the system. Below are the details:</p>
+            <h2>Error Details</h2>
+            <div class="error-details">
+                <strong>{error_details['type']}</strong>: {error_details['message']}
+            </div>
+            <h2>Traceback</h2>
+            <div class="traceback-details">
+                {traceback_details}
+            </div>
+            <p>Please address this issue as soon as possible.</p>
+            <p>Best regards,<br>Your System</p>
+        </div>
+    """
+    return base_html(body, style.error)
 
 
 def table_with_two_columns(key_value_pairs):

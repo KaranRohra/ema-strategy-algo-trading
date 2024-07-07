@@ -26,10 +26,10 @@ def send_email(subject, body, body_content_type="plain"):
         smtp.send_message(msg)
 
 
-def send_error_email(error):
-    subject = "Algo Trading - Error Alert"
-    body = error
-    send_email(subject, body)
+def send_error_email(subject, error_details, traceback_details):
+    subject = f"Algo Trading - {subject}"
+    body = ht.error_template(error_details, traceback_details)
+    send_email(subject, body, "html")
 
 
 def send_trading_stop_email():
