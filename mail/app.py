@@ -42,3 +42,9 @@ def send_trading_started_email(args):
     subject = f"Algo Trading - Trading Started"
     body = ht.multiple_table(args)
     send_email(subject, body, "html")
+
+
+def send_order_status_email(kwargs, subject):
+    subject = f"Algo Trading - {subject}"
+    body = ht.table_with_two_columns(kwargs)
+    send_email(subject, body, "html")

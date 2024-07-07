@@ -7,6 +7,7 @@ from constants import LogType, Env
 from connection import kite
 from db import MongoDB
 from datetime import datetime as dt, timedelta as td
+from mail import app as mail_app
 
 
 def place_entry_order(order_details, holding, instrument_token):
@@ -42,11 +43,10 @@ def place_entry_order(order_details, holding, instrument_token):
         return
     order_details["validity_ttl"] = int(str(dt.now() - valid_till).split(":")[1]) + 1
     order_id = kite.place_order(**order_details)
-    MongoDB.insert_log(
-        log_type=LogType.SUCCESS,
-        message="Order placed successfully",
-        details={"order_id": order_id, **holding},
-    )
+    msg = "Order placed successfully"
+    details = {"order_id": order_id, **holding}
+    MongoDB.insert_log(log_type=LogType.SUCCESS, message=msg, details=details)
+    mail_app.send_order_status_email(details, msg)
 
     while ku.get_order_status(order_id)["status"] not in (
         kite.STATUS_COMPLETE,
@@ -57,17 +57,23 @@ def place_entry_order(order_details, holding, instrument_token):
 
     if ku.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
         MongoDB.holdings.insert_one(holding)
+        msg = "Order executed successfully"
+        details = {"order_id": order_id, **holding}
         MongoDB.insert_log(
             log_type=LogType.SUCCESS,
-            message="Order executed successfully",
-            details={"order_id": order_id, **holding},
+            message=msg,
+            details=details,
         )
+        mail_app.send_order_status_email(details, msg)
     else:
+        msg = "Order failed"
+        details = {"order_id": order_id, **holding}
         MongoDB.insert_log(
             log_type=LogType.FAIL,
-            message="Order failed",
-            details={"order_id": order_id, **holding},
+            message=msg,
+            details=details,
         )
+        mail_app.send_order_status_email(details, msg)
 
 
 def search_entry(symbol_details):
@@ -161,6 +167,7 @@ def search_exit(holding):
 
     holding["to"] = str(ohlc[-1]["date"])
 
+    details = {"order_id": order_id, **holding}
     if ku.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
         entry_signal_details = MongoDB.holdings.find_one(
             {"symbol": holding["tradingsymbol"]}
@@ -168,14 +175,18 @@ def search_exit(holding):
         holding.update(entry_signal_details)
         MongoDB.holdings.delete_one({"symbol": holding["tradingsymbol"]})
         MongoDB.trades.insert_one(holding)
+        msg = "Order executed successfully"
         MongoDB.insert_log(
             log_type=LogType.SUCCESS,
-            message="Order executed successfully",
-            details={"order_id": order_id, **holding},
+            message=msg,
+            details=details,
         )
+        mail_app.send_order_status_email(details, msg)
     else:
+        msg = "Order failed"
         MongoDB.insert_log(
             log_type=LogType.FAIL,
-            message="Order failed",
-            details={"order_id": order_id, **holding},
+            message=msg,
+            details=details,
         )
+        mail_app.send_order_status_email(details, msg)

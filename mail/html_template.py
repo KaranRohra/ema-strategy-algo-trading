@@ -30,19 +30,42 @@ def table_with_two_columns_body(key_value_pairs):
 
 def style_table():
     return f"""
-         table {{
-              border-collapse: collapse;
-              width: 100%;
-          }}
-          th, td {{
-              border: 1px solid black;
-              padding: 8px;
-              text-align: left;
-          }}
-          th {{
-              background-color: #f2f2f2;
-          }}
-        """
+        table {{
+            border-collapse: collapse;
+            width: 100%;
+            margin: 20px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
+            overflow: hidden;
+        }}
+        th, td {{
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }}
+        th {{
+            background-color: #007BFF;
+            color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+        }}
+        tr:nth-child(even) {{
+            background-color: #f9f9f9;
+        }}
+        tr:hover {{
+            background-color: #f1f1f1;
+        }}
+        th:first-child, td:first-child {{
+            border-left: none;
+        }}
+        th:last-child, td:last-child {{
+            border-right: none;
+        }}
+        td {{
+            color: #333;
+        }}
+    """
 
 
 def table_with_two_columns(key_value_pairs):
