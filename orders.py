@@ -16,6 +16,7 @@ def place_entry_order(order_details, holding, instrument_token):
     wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
     end_minutes = (wait_time * 10) // 10
     end_seconds = (wait_time * 10) % 10
+    wait_seconds = end_minutes * 60
     valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
 
     while now < valid_till:
@@ -33,15 +34,19 @@ def place_entry_order(order_details, holding, instrument_token):
             order_details["price"] = holding["entry_price"] = ohlc["low"]
             break
         now = dt.now()
+        wait_seconds -= 1
         time.sleep(1)
     if now >= valid_till:
+        msg = "Order failed"
+        details = {"status": "Candle high/low not break", **holding}
+        mail_app.send_order_status_email(details, msg)
         MongoDB.insert_log(
             log_type=LogType.FAIL,
-            message="Order failed",
-            details={"status": "Candle high/low not break", **holding},
+            message=msg,
+            details=details,
         )
         return
-    order_details["validity_ttl"] = int(str(dt.now() - valid_till).split(":")[1]) + 1
+    order_details["validity_ttl"] = int((abs(wait_seconds) // 60) + 1)
     order_id = kite.place_order(**order_details)
     msg = "Order placed successfully"
     details = {"order_id": order_id, **holding}

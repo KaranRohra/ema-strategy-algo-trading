@@ -15,10 +15,10 @@ from mail import app as ma
 
 
 def notify_error_details(e):
-    MongoDB.insert_log(log_type=LogType.ERROR, message=str(e))
     error_details = {"type": type(e).__name__, "message": str(e)}
     traceback_details = traceback.format_exc()
     subject = f"Error Report: {error_details['type']} in your script"
+    MongoDB.insert_log(log_type=LogType.ERROR, message=subject, details=traceback_details)
     ma.send_error_email(subject, error_details, traceback_details)
 
 
