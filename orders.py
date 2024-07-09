@@ -60,10 +60,10 @@ def place_entry_order(order_details, holding, instrument_token):
     ):
         time.sleep(10)
 
+    details = {"order_id": order_id, **holding}
     if ku.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
         MongoDB.holdings.insert_one(holding)
         msg = "Order executed successfully"
-        details = {"order_id": order_id, **holding}
         MongoDB.insert_log(
             log_type=LogType.SUCCESS,
             message=msg,
@@ -72,7 +72,6 @@ def place_entry_order(order_details, holding, instrument_token):
         mail_app.send_order_status_email(details, msg)
     else:
         msg = "Order failed"
-        details = {"order_id": order_id, **holding}
         MongoDB.insert_log(
             log_type=LogType.FAIL,
             message=msg,
