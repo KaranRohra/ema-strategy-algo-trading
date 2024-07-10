@@ -7,7 +7,7 @@ from datetime import datetime as dt
 
 
 def get_sheet():
-    PRIVATE_KEY = environ[Env.GOOGLE_SHEET_PRIVATE_KEY].replace("\\\\", "\\")
+    PRIVATE_KEY = "\n".join(environ[Env.GOOGLE_SHEET_PRIVATE_KEY].split("\\n"))
     credentials = ServiceAccountCredentials.from_json_keyfile_dict(
         {
             "type": "service_account",
