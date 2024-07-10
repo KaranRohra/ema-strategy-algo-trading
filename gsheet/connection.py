@@ -7,16 +7,13 @@ from datetime import datetime as dt
 
 
 def get_sheet():
-    # Define the scope and credentials
-    scope = [
-        "https://www.googleapis.com/auth/spreadsheets",
-    ]
+    PRIVATE_KEY = environ[Env.GOOGLE_SHEET_PRIVATE_KEY].replace("\\\\", "\\")
     credentials = ServiceAccountCredentials.from_json_keyfile_dict(
         {
             "type": "service_account",
             "project_id": "algo-trading-sheet",
             "private_key_id": environ[Env.GOOGLE_SHEET_PRIVATE_KEY_ID],
-            "private_key": f"-----BEGIN PRIVATE KEY-----\n{environ[Env.GOOGLE_SHEET_PRIVATE_KEY]}\n-----END PRIVATE KEY-----\n",
+            "private_key": f"-----BEGIN PRIVATE KEY-----\n{PRIVATE_KEY}\n-----END PRIVATE KEY-----\n",
             "client_email": environ[Env.SERVICE_ACCOUNT],
             "client_id": environ[Env.CLIENT_ID],
             "auth_uri": "https://accounts.google.com/o/oauth2/auth",
