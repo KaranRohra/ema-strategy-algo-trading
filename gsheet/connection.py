@@ -15,7 +15,7 @@ def get_sheet():
         {
             "type": "service_account",
             "project_id": "algo-trading-sheet",
-            "private_key_id": environ[Env.GOOGLE_SHEET_PRIVATE_KEY],
+            "private_key_id": environ[Env.GOOGLE_SHEET_PRIVATE_KEY_ID],
             "private_key": f"-----BEGIN PRIVATE KEY-----\n{environ[Env.GOOGLE_SHEET_PRIVATE_KEY]}\n-----END PRIVATE KEY-----\n",
             "client_email": environ[Env.SERVICE_ACCOUNT],
             "client_id": environ[Env.CLIENT_ID],
