@@ -4,6 +4,7 @@ kiteconnect
 python-dotenv
 pymongo
 pyotp
+schedule
 numpy==1.26.4
 cachetools==5.3.3
 certifi==2024.7.4
