@@ -65,7 +65,7 @@ def scan_users_basket(users):
 def start():
     error_caught = 0
     while error_caught < 5:
-        try:
+        # try:
             users = gusers.get_or_update_users()
             schedule.every().minute.at(":00").do(scan_users_basket, users)
             while mu.is_trading_time():
@@ -75,6 +75,6 @@ def start():
                 if now.second < 55:
                     time.sleep(55 - now.second)
             break
-        except Exception as e:
-            error_caught += 1
-            print(f"[{dt.now()}]: {e}")
+        # except Exception as e:
+        #     error_caught += 1
+        #     print(f"[{dt.now()}]: {e}")
