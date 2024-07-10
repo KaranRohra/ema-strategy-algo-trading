@@ -3,7 +3,7 @@ import pandas_ta as ta
 
 from utils.common import last
 from pytrendseries import detecttrend as pydt
-from connection import kite
+from kite.connect import KiteConnect
 
 
 def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
@@ -15,7 +15,7 @@ def _cnt_above_below(left_key: str, right_key: str, ohlc: list):
     return cnt
 
 
-def _strategy(ohlc: list):
+def _strategy(kite: KiteConnect, ohlc: list):
     curr = ohlc[-1]
     analysis = {
         "close_above_emas": curr["close"] > curr["ema50"] > curr["ema200"],
@@ -61,7 +61,7 @@ def get_trend_analysis(price, trend, param_key):
     }
 
 
-def get_entry_signal(ohlc: list):
+def get_entry_signal(kite: KiteConnect, ohlc: list):
     close_series = pd.DataFrame(ohlc)["close"]
     ema20 = ta.ema(close_series, length=20).tolist()
     ema50 = ta.ema(close_series, length=50).tolist()
@@ -88,10 +88,10 @@ def get_entry_signal(ohlc: list):
             ohlc[i]["ema200"] = ema200[i]
         i -= 1
 
-    return _strategy(ohlc)
+    return _strategy(kite, ohlc)
 
 
-def get_exit_signal(ohlc: list):
+def get_exit_signal(kite: KiteConnect, ohlc: list):
     close_series = pd.DataFrame(ohlc)["close"]
     curr_close = ohlc[-1]["close"]
     ema200 = ta.ema(close_series, length=200).tolist()[-1]

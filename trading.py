@@ -1,75 +1,80 @@
-import os
 import orders
+import schedule
+import threading
 import time
 
-from constants import Env, LogType
-from datetime import datetime as dt, timedelta
-from utils import kite_utils, market_utils as mu
-from mail import app as ma
-from db import MongoDB
+from os import environ
+from constants import Env
+from datetime import datetime as dt
+from gsheet import users as gusers
+from utils import kite_utils as ku, market_utils as mu
 
 
-def trading_start_notification(basket_items):
-    trade_details_lst = [
-        {
-            "heading": "Time Frame",
-            "key_value": {
-                "entry_time_frame": os.environ[Env.ENTRY_TIME_FRAME] + "minutes",
-                "exit_time_frame": os.environ[Env.EXIT_TIME_FRAME] + "minutes",
-            },
-        }
-    ]
+def scan_users_basket(users):
+    now = dt.now()
+    entry_time_frame = int(environ[Env.ENTRY_TIME_FRAME])
+    exit_time_frame = int(environ[Env.EXIT_TIME_FRAME])
 
-    for sd in basket_items:
-        trade_details_lst.append(
-            {
-                "heading": "Symbol Details" if len(trade_details_lst) == 1 else "",
-                "key_value": {
-                    "exchange": sd["exchange"],
-                    "symbol": sd["tradingsymbol"],
-                },
+    is_perfect_time_entry = now.minute % entry_time_frame == 0
+    is_perfect_time_exit = now.minute % exit_time_frame == 0
+
+    symbol_scan = []
+    for user in gusers.get_or_update_users(users):
+        if not user.active:
+            continue
+
+        if now < user.start_time or now > user.end_time:
+            continue
+
+        holdings = user.kite.holdings()
+        positions = user.kite.positions()
+        tokens = []
+        for sd in ku.get_basket_items(user.kite, user.basket):
+
+            if sd["instrument_token"] in user.in_process_symbols:
+                continue
+
+            holding = ku.get_holding(positions, holdings, sd["instrument_token"])
+            ss = {
+                "user": user,
+                "sd": sd,
             }
-        )
 
-    ma.send_trading_started_email(trade_details_lst)
-    MongoDB.insert_log(
-        log_type=LogType.INFO, message="Trading started", details=[d["key_value"] for d in trade_details_lst]
-    )
+            if holding:
+                if is_perfect_time_exit:
+                    ss["thread"] = threading.Thread(
+                        target=orders.search_exit, args=(user, holding)
+                    )
+
+            else:
+                if is_perfect_time_entry:
+                    ss["thread"] = threading.Thread(
+                        target=orders.search_entry, args=(user, sd)
+                    )
+            symbol_scan.append(ss)
+            tokens.append(sd["instrument_token"])
+        ku.cancel_orders(user.kite, tokens)
+
+    for ss in symbol_scan:
+        user: gusers.User = ss["user"]
+        thread = ss.get("thread")
+        if thread:
+            thread.start()
 
 
 def start():
-    entry_time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
-    exit_time_frame = int(os.environ[Env.EXIT_TIME_FRAME])
-
-    basket_items = kite_utils.get_basket_items()
-    trading_start_notification(basket_items)
-
-    while mu.is_market_open()["is_market_open"]:
-        now = dt.now()
-        if now.minute % 2 == 0 and now.second == 1:
-            basket_items_updated = kite_utils.get_basket_items()
-            if str(basket_items) != str(basket_items_updated):
-                basket_items = basket_items_updated
-                trading_start_notification(basket_items)
-
-        for sd in basket_items:  # SD = Symbol Details
-            exchange, symbol = sd["exchange"], sd["tradingsymbol"]
-            if now.minute % entry_time_frame == 0 and now.second == 0:
-                holding = kite_utils.get_holding_by_symbol(exchange, symbol)
-                if not holding:
-                    orders.search_entry(sd)
-            if now.minute % exit_time_frame == 0 and now.second == 0:
-                holding = kite_utils.get_holding_by_symbol(exchange, symbol)
-                if holding:
-                    orders.search_exit(holding)
-        time.sleep(1)
-
-    end_time = mu.is_market_open()["end_time"] + timedelta(minutes=1)
-    if end_time > dt.now():
-        for sd in basket_items:  # SD = Symbol Details
-            exchange, symbol = sd["exchange"], sd["tradingsymbol"]
-            holding = kite_utils.get_holding_by_symbol(exchange, symbol)
-            if holding:
-                orders.search_exit(holding)
-            else:
-                orders.search_entry(sd)
+    error_caught = 0
+    while error_caught < 5:
+        try:
+            users = gusers.get_or_update_users()
+            schedule.every().minute.at(":00").do(scan_users_basket, users)
+            while mu.is_trading_time():
+                schedule.run_pending()
+                now = dt.now()
+                # Added waiting condition so that other threads can execute faster
+                if now.second < 55:
+                    time.sleep(55 - now.second)
+            break
+        except Exception as e:
+            error_caught += 1
+            print(f"[{dt.now()}]: {e}")

@@ -3,7 +3,7 @@ from os import environ
 from constants import Env
 
 
-def is_market_open() -> bool:
+def is_trading_time() -> bool:
     now = dt.now()
     TIME_FORMAT = "%H:%M:%S"
     start_time = dt.strptime(environ[Env.START_TIME], TIME_FORMAT)
@@ -12,9 +12,4 @@ def is_market_open() -> bool:
     end_time = dt.strptime(environ[Env.END_TIME], TIME_FORMAT)
     end_time = end_time.replace(year=now.year, month=now.month, day=now.day)
 
-    return {
-        "start_time": start_time,
-        "end_time": end_time,
-        "is_market_open": start_time <= now <= end_time,
-    }
-
+    return start_time <= now <= end_time
