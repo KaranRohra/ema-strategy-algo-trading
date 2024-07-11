@@ -26,19 +26,24 @@ def send_email(subject, body, body_content_type="plain"):
         smtp.send_message(msg)
 
 
-def send_error_email(error):
-    subject = "Algo Trading - Error Alert"
-    body = error
-    send_email(subject, body)
+def send_error_email(subject, error_details, traceback_details):
+    subject = f"Algo Trading - {subject}"
+    body = ht.error_template(error_details, traceback_details)
+    send_email(subject, body, "html")
 
 
 def send_trading_stop_email():
     subject = "Algo Trading - Trading Stopped"
-    body = "Trading is stopped."
-    send_email(subject, body)
+    body = ht.trading_stop()
+    send_email(subject, body, "html")
 
 
 def send_trading_started_email(args):
     subject = f"Algo Trading - Trading Started"
-    body = ht.multiple_table(args)
+    body = ht.multiple_table(args, "Trading Started")
     send_email(subject, body, "html")
+
+
+def send_order_status_email(kwargs, subject):
+    body = ht.table_with_two_columns(kwargs, subject)
+    send_email(f"Algo Trading - {subject}", body, "html")
