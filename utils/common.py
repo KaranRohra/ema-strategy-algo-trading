@@ -29,3 +29,7 @@ def notify_error_details(e):
     traceback_details = traceback.format_exc()
     subject = f"Error Report: {error_details['type']} in your script"
     ma.send_error_email(subject, error_details, traceback_details)
+
+
+def get_risk_managed_qty(entry_price, stoploss, risk_amount):
+    return risk_amount // abs(entry_price - stoploss)

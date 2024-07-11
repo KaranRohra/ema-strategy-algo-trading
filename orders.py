@@ -2,16 +2,16 @@ import strategy
 import time
 import os
 
-from utils import kite_utils as ku
+from utils import kite_utils as ku, common
 from constants import Env
 from datetime import datetime as dt, timedelta as td
 from mail import app as mail_app
 from gsheet.users import User
-from kite.connect import KiteConnect
 
 
-def place_entry_order(kite: KiteConnect, order_details, holding, instrument_token):
-    profile = kite.profile()
+def place_entry_order(user: User, order_details, holding, instrument_token):
+    kite = user.kite
+    exchange, symbol = holding["exchange"], holding["symbol"]
     tran_type = order_details["transaction_type"]
     now = dt.now()
     wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
@@ -20,7 +20,7 @@ def place_entry_order(kite: KiteConnect, order_details, holding, instrument_toke
     wait_seconds = end_minutes * 60
     valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
     print(
-        f"[{dt.now()}] [{profile['user_id']}] [{holding['exchange']}:{holding['symbol']}]: Waiting for High/Low Break"
+        f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Waiting for High/Low Break"
     )
 
     while now < valid_till:
@@ -44,12 +44,22 @@ def place_entry_order(kite: KiteConnect, order_details, holding, instrument_toke
         msg = "Order failed"
         details = {"status": "Candle high/low not break", **holding}
         mail_app.send_order_status_email(details, msg)
-        print(f"[{dt.now()}] [{profile['user_id']}]: {msg}")
+        print(f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: {msg}")
+        return
+
+    # Don't take trade if loss is higher than risk_amount
+    risk_qty = common.get_risk_managed_qty(
+        order_details["price"], holding["ema200"], user.risk_amount
+    )
+    if risk_qty < holding["quantity"]:
+        print(
+            f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Risk is higher than Risk Amount"
+        )
         return
     order_id = kite.place_order(**order_details)
     msg = "Order placed successfully"
     details = {"order_id": order_id, **holding}
-    print(f"[{dt.now()}] [{profile['user_id']}]: {msg}")
+    print(f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: {msg}")
     mail_app.send_order_status_email(details, msg)
 
 
@@ -78,16 +88,6 @@ def search_entry(user: User, symbol_details):
         "ltp": ohlc[-1]["close"],
         **signal_details,
     }
-    risk_managed_qty = user.risk_amount // abs(
-        holding["ltp"] - signal_details["ema200"]
-    )
-
-    # Don't take trade if loss is higher than risk_amount
-    if risk_managed_qty < holding["quantity"]:
-        print(
-            f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Risk is higher than Risk Amount"
-        )
-        return
 
     if signal_details["signal"] == kite.TRANSACTION_TYPE_BUY:
         holding["entry_price"] = ohlc[-1]["high"]
@@ -105,7 +105,7 @@ def search_entry(user: User, symbol_details):
         "price": holding["entry_price"],
     }
 
-    place_entry_order(kite, order_detail, holding, instrument_token)
+    place_entry_order(user, order_detail, holding, instrument_token)
     user.in_process_symbols.remove(instrument_token)
 
 

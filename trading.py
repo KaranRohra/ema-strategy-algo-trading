@@ -7,7 +7,7 @@ from os import environ
 from constants import Env
 from datetime import datetime as dt
 from gsheet import users as gusers
-from utils import kite_utils as ku, market_utils as mu
+from utils import kite_utils as ku, market_utils as mu, common
 
 
 def scan_users_basket(users):
@@ -78,4 +78,5 @@ def start():
         except Exception as e:
             error_caught += 1
             print(f"[{dt.now()}]: {e}")
+            common.notify_error_details(e)
             time.sleep(5)
