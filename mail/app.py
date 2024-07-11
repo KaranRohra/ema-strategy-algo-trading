@@ -1,15 +1,17 @@
 import smtplib
 import os
+import traceback
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from constants import Env
 from datetime import datetime as dt
 from mail import html_template as ht
+from gsheet.environ import GOOGLE_SHEET_ENVIRON
 
 
 def send_email(subject, body, body_content_type="plain"):
-    if os.environ.get(Env.SEND_EMAIL) == "0":
+    if not GOOGLE_SHEET_ENVIRON.send_email:
         return
     email_address = os.environ.get(Env.EMAIL_ADDRESS)
     password = os.environ.get(Env.EMAIL_PASSWORD)
@@ -26,8 +28,10 @@ def send_email(subject, body, body_content_type="plain"):
         smtp.send_message(msg)
 
 
-def send_error_email(subject, error_details, traceback_details):
-    subject = f"Algo Trading - {subject}"
+def send_error_email(e):
+    error_details = {"type": type(e).__name__, "message": str(e)}
+    traceback_details = traceback.format_exc()
+    subject = f"Error Report: {error_details['type']} in your script"
     body = ht.error_template(error_details, traceback_details)
     send_email(subject, body, "html")
 

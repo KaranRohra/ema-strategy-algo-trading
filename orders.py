@@ -3,10 +3,10 @@ import time
 import os
 
 from utils import kite_utils as ku, common
-from constants import Env
 from datetime import datetime as dt, timedelta as td
 from mail import app as mail_app
 from gsheet.users import User
+from gsheet.environ import GOOGLE_SHEET_ENVIRON
 
 
 def place_entry_order(user: User, order_details, holding, instrument_token):
@@ -14,7 +14,7 @@ def place_entry_order(user: User, order_details, holding, instrument_token):
     exchange, symbol = holding["exchange"], holding["symbol"]
     tran_type = order_details["transaction_type"]
     now = dt.now()
-    wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
+    wait_time = GOOGLE_SHEET_ENVIRON.entry_time_frame * 2.8
     end_minutes = (wait_time * 10) // 10
     end_seconds = (wait_time * 10) % 10
     wait_seconds = end_minutes * 60
@@ -67,8 +67,9 @@ def search_entry(user: User, symbol_details):
     kite = user.kite
     symbol, exchange = symbol_details["tradingsymbol"], symbol_details["exchange"]
     instrument_token = symbol_details["instrument_token"]
-    time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
-    ohlc = ku.get_historical_data(kite, instrument_token, time_frame)
+    ohlc = ku.get_historical_data(
+        kite, instrument_token, GOOGLE_SHEET_ENVIRON.entry_time_frame
+    )
 
     signal_details = strategy.get_entry_signal(kite, ohlc)
     print(
@@ -111,8 +112,9 @@ def search_entry(user: User, symbol_details):
 
 def search_exit(user: User, holding):
     kite = user.kite
-    time_frame = int(os.environ[Env.EXIT_TIME_FRAME])
-    ohlc = ku.get_historical_data(kite, holding["instrument_token"], time_frame)
+    ohlc = ku.get_historical_data(
+        kite, holding["instrument_token"], GOOGLE_SHEET_ENVIRON.exit_time_frame
+    )
     signal = strategy.get_exit_signal(kite, ohlc)
     print(
         f"[{dt.now()}] [{user.user_id}] [{holding['exchange']}:{holding['tradingsymbol']}]: Searching for exit - {signal}"

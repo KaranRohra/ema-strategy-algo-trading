@@ -5,6 +5,7 @@ from utils.common import title_to_snake, time_str_to_curr_datetime
 from gsheet import connection
 from kite.connect import KiteConnect
 from datetime import datetime as dt
+from constants import SheetIndex
 
 
 class User:
@@ -63,7 +64,7 @@ class User:
 
 def get_or_update_users(old_users: List[User] | None = None) -> List[User]:
     """Returns a list of users from the google sheet."""
-    worksheet = connection.get_sheet().get_worksheet(0)
+    worksheet = connection.get_sheet().get_worksheet(SheetIndex.USER)
     values = worksheet.get_all_values()
     headers = [title_to_snake(h) for h in values[0]]
 

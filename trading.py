@@ -3,20 +3,18 @@ import schedule
 import threading
 import time
 
-from os import environ
-from constants import Env
+from mail import app as ma
 from datetime import datetime as dt
 from gsheet import users as gusers
+from gsheet.environ import GOOGLE_SHEET_ENVIRON
 from utils import kite_utils as ku, market_utils as mu, common
 
 
 def scan_users_basket(users):
+    GOOGLE_SHEET_ENVIRON.set_environ()
     now = dt.now()
-    entry_time_frame = int(environ[Env.ENTRY_TIME_FRAME])
-    exit_time_frame = int(environ[Env.EXIT_TIME_FRAME])
-
-    is_perfect_time_entry = now.minute % entry_time_frame == 0
-    is_perfect_time_exit = now.minute % exit_time_frame == 0
+    is_perfect_time_entry = now.minute % GOOGLE_SHEET_ENVIRON.entry_time_frame == 0
+    is_perfect_time_exit = now.minute % GOOGLE_SHEET_ENVIRON.exit_time_frame == 0
 
     symbol_scan = []
     for user in gusers.get_or_update_users(users):
@@ -68,6 +66,7 @@ def scan_users_basket(users):
 
 
 def start():
+    GOOGLE_SHEET_ENVIRON.set_environ()
     while mu.is_trading_time():
         try:
             users = gusers.get_or_update_users()
@@ -77,5 +76,6 @@ def start():
                 time.sleep(1)
         except Exception as e:
             print(f"[{dt.now()}]: {e}")
-            common.notify_error_details(e)
+            ma.send_error_email(e)
             time.sleep(5)
+        GOOGLE_SHEET_ENVIRON.set_environ()
