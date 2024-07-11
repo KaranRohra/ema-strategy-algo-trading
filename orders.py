@@ -142,7 +142,7 @@ def search_exit(user: User, holding):
     holding["to"] = str(ohlc[-1]["date"])
 
     details = {**user.to_dict(), "order_id": order_id, **holding}
-    if ku.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
+    if ku.get_order_status(kite, str(order_id))["status"] == kite.STATUS_COMPLETE:
         msg = "Order executed successfully"
     else:
         msg = "Order failed"

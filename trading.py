@@ -61,22 +61,21 @@ def scan_users_basket(users):
         if thread:
             thread.start()
 
+    # Added waiting condition so that other threads can execute faster
+    now = dt.now()
+    if now.second < 56:
+        time.sleep(56 - now.second)
+
 
 def start():
-    error_caught = 0
-    while error_caught < 5:
+    while mu.is_trading_time():
         try:
             users = gusers.get_or_update_users()
             schedule.every().minute.at(":00").do(scan_users_basket, users)
             while mu.is_trading_time():
                 schedule.run_pending()
-                now = dt.now()
-                # Added waiting condition so that other threads can execute faster
-                if now.second < 55:
-                    time.sleep(55 - now.second)
-            break
+                time.sleep(1)
         except Exception as e:
-            error_caught += 1
             print(f"[{dt.now()}]: {e}")
             common.notify_error_details(e)
             time.sleep(5)
