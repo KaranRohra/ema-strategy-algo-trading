@@ -1,7 +1,7 @@
 import strategy
 import time
-import os
 
+from typing import List
 from utils import kite_utils as ku, common
 from datetime import datetime as dt, timedelta as td
 from mail import app as mail_app
@@ -152,3 +152,14 @@ def search_exit(user: User, holding):
         f"[{dt.now()}] [{user.user_id}] [{holding['exchange']}:{holding['tradingsymbol']}]: {msg}"
     )
     mail_app.send_order_status_email(details, msg)
+
+
+def cancel_basket_scripts_orders(user: User, instrument_tokens: List[int]):
+    kite = user.kite
+    for o in kite.orders():
+        if o["instrument_token"] in (instrument_tokens) and o["status"] not in (
+            kite.STATUS_COMPLETE,
+            kite.STATUS_CANCELLED,
+            kite.STATUS_REJECTED,
+        ):
+            kite.cancel_order(o["variety"], o["order_id"])

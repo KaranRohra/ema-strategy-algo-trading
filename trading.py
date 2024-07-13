@@ -7,7 +7,64 @@ from mail import app as ma
 from datetime import datetime as dt
 from gsheet import users as gusers
 from gsheet.environ import GOOGLE_SHEET_ENVIRON
-from utils import kite_utils as ku, market_utils as mu, common
+from utils import kite_utils as ku, market_utils as mu
+
+
+def search_trade_with_exception_handler(
+    user: gusers.User, holding, symbol_details, trade_signal
+):
+    try:
+        if trade_signal == "ENTRY":
+            orders.search_entry(user, symbol_details)
+        elif trade_signal == "EXIT":
+            orders.search_exit(user, holding)
+    except Exception as e:
+        user.in_process_symbols.discard(symbol_details["instrument_token"])
+        user.set_kite_obj()
+        print(
+            f"[{dt.now()}] [{user.user_id}] [{symbol_details['exchange']}:{symbol_details['tradingsymbol']}]: {trade_signal}",
+        )
+        ma.send_error_email(e)
+
+
+def scan_single_user(
+    user: gusers.User, now: dt, is_perfect_time_entry: bool, is_perfect_time_exit: bool
+):
+    if not user.active:
+        return
+
+    if now < user.start_time or now > user.end_time:
+        return
+
+    holdings = user.kite.holdings()
+    positions = user.kite.positions()
+    tokens = []
+    basket_items = ku.get_basket_items(user, user.basket)
+    for sd in basket_items:
+        tokens.append(sd["instrument_token"])
+
+    # Canceling all orders before scanning the scripts
+    orders.cancel_basket_scripts_orders(user, tokens)
+
+    for sd in basket_items:
+
+        if sd["instrument_token"] in user.in_process_symbols:
+            continue
+
+        holding = ku.get_holding(positions, holdings, sd["instrument_token"])
+        TRADE_SIGNAL = None
+        if holding:
+            if is_perfect_time_exit:
+                TRADE_SIGNAL = "EXIT"
+        else:
+            if is_perfect_time_entry:
+                TRADE_SIGNAL = "ENTRY"
+        if TRADE_SIGNAL:
+            threading.Thread(
+                target=search_trade_with_exception_handler,
+                args=(user, holding, sd, TRADE_SIGNAL),
+                name=f"[{dt.now()}] [{user.user_id}] [{sd['exchange']}:{sd['tradingsymbol']}]: {TRADE_SIGNAL}",
+            ).start()
 
 
 def scan_users_basket(users):
@@ -16,48 +73,13 @@ def scan_users_basket(users):
     is_perfect_time_entry = now.minute % GOOGLE_SHEET_ENVIRON.entry_time_frame == 0
     is_perfect_time_exit = now.minute % GOOGLE_SHEET_ENVIRON.exit_time_frame == 0
 
-    symbol_scan = []
     for user in gusers.get_or_update_users(users):
-        if not user.active:
-            continue
-
-        if now < user.start_time or now > user.end_time:
-            continue
-
-        holdings = user.kite.holdings()
-        positions = user.kite.positions()
-        tokens = []
-        for sd in ku.get_basket_items(user.kite, user.basket):
-
-            if sd["instrument_token"] in user.in_process_symbols:
-                continue
-
-            holding = ku.get_holding(positions, holdings, sd["instrument_token"])
-            ss = {
-                "user": user,
-                "sd": sd,
-            }
-
-            if holding:
-                if is_perfect_time_exit:
-                    ss["thread"] = threading.Thread(
-                        target=orders.search_exit, args=(user, holding)
-                    )
-
-            else:
-                if is_perfect_time_entry:
-                    ss["thread"] = threading.Thread(
-                        target=orders.search_entry, args=(user, sd)
-                    )
-            symbol_scan.append(ss)
-            tokens.append(sd["instrument_token"])
-        ku.cancel_orders(user.kite, tokens)
-
-    for ss in symbol_scan:
-        user: gusers.User = ss["user"]
-        thread = ss.get("thread")
-        if thread:
-            thread.start()
+        try:
+            scan_single_user(user, now, is_perfect_time_entry, is_perfect_time_exit)
+        except Exception as e:
+            print(f"[{dt.now()}]: {e}")
+            user.set_kite_obj()
+            ma.send_error_email(e)
 
     # Added waiting condition so that other threads can execute faster
     now = dt.now()
@@ -77,5 +99,5 @@ def start():
         except Exception as e:
             print(f"[{dt.now()}]: {e}")
             ma.send_error_email(e)
+            GOOGLE_SHEET_ENVIRON.set_environ()
             time.sleep(5)
-        GOOGLE_SHEET_ENVIRON.set_environ()

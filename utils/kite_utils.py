@@ -2,6 +2,7 @@ from utils.common import first
 from datetime import datetime as dt, timedelta as td
 from kite.connect import KiteConnect
 from typing import List
+from gsheet import users as gusers
 
 
 def get_holding(positions, holdings, instrument_token):
@@ -33,23 +34,17 @@ def get_historical_data(kite: KiteConnect, instrument_token, interval):
     )
 
 
-def cancel_orders(kite: KiteConnect, instrument_tokens: List[int]):
-    for o in kite.orders():
-        if o["instrument_token"] in (instrument_tokens) and o["status"] not in (
-            kite.STATUS_COMPLETE,
-            kite.STATUS_CANCELLED,
-            kite.STATUS_REJECTED,
-        ):
-            kite.cancel_order(o["variety"], o["order_id"])
-
-
 def get_order_status(kite: KiteConnect, order_id):
     return first([o for o in kite.orders() if o["order_id"] == order_id])
 
 
-def get_basket_items(kite: KiteConnect, name: str):
-    basket = first([b for b in kite.baskets() if b["name"] == name])
-    return basket["items"] if basket else []
+def get_basket_items(user: gusers.User, name: str):
+    basket = first([b for b in user.kite.baskets() if b["name"] == name])
+    if basket:
+        return basket["items"]
+
+    print(f"[{dt.now()}] [{user.user_id}]: Basket not found - {name}")
+    return []
 
 
 def get_candle_interval(time_frame) -> str:
