@@ -78,7 +78,6 @@ def search_entry(user: User, symbol_details):
     if not signal_details["signal"]:
         return
 
-    user.in_process_symbols.add(instrument_token)
     holding = {
         **user.to_dict(),
         "symbol": symbol,
@@ -107,7 +106,6 @@ def search_entry(user: User, symbol_details):
     }
 
     place_entry_order(user, order_detail, holding, instrument_token)
-    user.in_process_symbols.remove(instrument_token)
 
 
 def search_exit(user: User, holding):

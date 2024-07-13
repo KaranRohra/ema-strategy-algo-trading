@@ -13,18 +13,21 @@ from utils import kite_utils as ku, market_utils as mu
 def search_trade_with_exception_handler(
     user: gusers.User, holding, symbol_details, trade_signal
 ):
+    token = symbol_details["instrument_token"]
+    user.in_process_symbols.add(token)
     try:
         if trade_signal == "ENTRY":
             orders.search_entry(user, symbol_details)
         elif trade_signal == "EXIT":
             orders.search_exit(user, holding)
     except Exception as e:
-        user.in_process_symbols.discard(symbol_details["instrument_token"])
         user.set_kite_obj()
         print(
             f"[{dt.now()}] [{user.user_id}] [{symbol_details['exchange']}:{symbol_details['tradingsymbol']}]: {trade_signal}",
         )
         ma.send_error_email(e)
+    finally:
+        user.in_process_symbols.discard(token)
 
 
 def scan_single_user(
