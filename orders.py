@@ -1,26 +1,30 @@
 import strategy
 import time
-import os
 
-from utils import kite_utils as ku
-from constants import LogType, Env
-from connection import kite
-from db import MongoDB
+from typing import List
+from utils import kite_utils as ku, common
 from datetime import datetime as dt, timedelta as td
 from mail import app as mail_app
+from gsheet.users import User
+from gsheet.environ import GOOGLE_SHEET_ENVIRON
 
 
-def place_entry_order(order_details, holding, instrument_token):
+def place_entry_order(user: User, order_details, holding, instrument_token):
+    kite = user.kite
+    exchange, symbol = holding["exchange"], holding["symbol"]
     tran_type = order_details["transaction_type"]
     now = dt.now()
-    wait_time = int(os.environ[Env.ENTRY_TIME_FRAME]) * 2.8
+    wait_time = GOOGLE_SHEET_ENVIRON.entry_time_frame * 2.8
     end_minutes = (wait_time * 10) // 10
     end_seconds = (wait_time * 10) % 10
     wait_seconds = end_minutes * 60
     valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
+    print(
+        f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Waiting for High/Low Break"
+    )
 
     while now < valid_till:
-        ohlc = ku.get_ohlc(instrument_token)
+        ohlc = ku.get_ohlc(kite, instrument_token)
         if (
             tran_type == kite.TRANSACTION_TYPE_BUY
             and ohlc["high"] > order_details["price"]
@@ -40,64 +44,42 @@ def place_entry_order(order_details, holding, instrument_token):
         msg = "Order failed"
         details = {"status": "Candle high/low not break", **holding}
         mail_app.send_order_status_email(details, msg)
-        MongoDB.insert_log(
-            log_type=LogType.FAIL,
-            message=msg,
-            details=details,
+        print(f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: {msg}")
+        return
+
+    # Don't take trade if loss is higher than risk_amount
+    risk_qty = common.get_risk_managed_qty(
+        order_details["price"], holding["ema200"], user.risk_amount
+    )
+    if risk_qty < holding["quantity"]:
+        print(
+            f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Risk is higher than Risk Amount"
         )
         return
-    order_details["validity_ttl"] = int((abs(wait_seconds) // 60) + 1)
     order_id = kite.place_order(**order_details)
     msg = "Order placed successfully"
     details = {"order_id": order_id, **holding}
-    MongoDB.insert_log(log_type=LogType.SUCCESS, message=msg, details=details)
+    print(f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: {msg}")
     mail_app.send_order_status_email(details, msg)
 
-    while ku.get_order_status(order_id)["status"] not in (
-        kite.STATUS_COMPLETE,
-        kite.STATUS_REJECTED,
-        kite.STATUS_CANCELLED,
-    ):
-        time.sleep(10)
 
-    details = {"order_id": order_id, **holding}
-    if ku.get_order_status(order_id)["status"] == kite.STATUS_COMPLETE:
-        MongoDB.holdings.insert_one(holding)
-        msg = "Order executed successfully"
-        MongoDB.insert_log(
-            log_type=LogType.SUCCESS,
-            message=msg,
-            details=details,
-        )
-        mail_app.send_order_status_email(details, msg)
-    else:
-        msg = "Order failed"
-        MongoDB.insert_log(
-            log_type=LogType.FAIL,
-            message=msg,
-            details=details,
-        )
-        mail_app.send_order_status_email(details, msg)
-
-
-def search_entry(symbol_details):
+def search_entry(user: User, symbol_details):
+    kite = user.kite
     symbol, exchange = symbol_details["tradingsymbol"], symbol_details["exchange"]
     instrument_token = symbol_details["instrument_token"]
-    time_frame = int(os.environ[Env.ENTRY_TIME_FRAME])
     ohlc = ku.get_historical_data(
-        instrument_token, ku.get_candle_interval(time_frame), int(time_frame)
+        kite, instrument_token, GOOGLE_SHEET_ENVIRON.entry_time_frame
     )
 
-    signal_details = strategy.get_entry_signal(ohlc)
-    MongoDB.insert_log(
-        log_type=LogType.TRADE,
-        message="Searching for entry",
-        details={"symbol": symbol, "exchange": exchange, **signal_details},
+    signal_details = strategy.get_entry_signal(kite, ohlc)
+    print(
+        f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Searching for entry - {signal_details}"
     )
     if not signal_details["signal"]:
         return
 
     holding = {
+        **user.to_dict(),
         "symbol": symbol,
         "exchange": exchange,
         "from": str(ohlc[-1]["date"]),
@@ -121,31 +103,19 @@ def search_entry(symbol_details):
         "quantity": holding["quantity"],
         "order_type": kite.ORDER_TYPE_LIMIT,
         "price": holding["entry_price"],
-        "validity": kite.VALIDITY_TTL,
     }
 
-    place_entry_order(order_detail, holding, instrument_token)
+    place_entry_order(user, order_detail, holding, instrument_token)
 
 
-def search_exit(holding):
-    time_frame = int(os.environ[Env.EXIT_TIME_FRAME])
+def search_exit(user: User, holding):
+    kite = user.kite
     ohlc = ku.get_historical_data(
-        holding["instrument_token"], ku.get_candle_interval(time_frame), int(time_frame)
+        kite, holding["instrument_token"], GOOGLE_SHEET_ENVIRON.exit_time_frame
     )
-    signal = strategy.get_exit_signal(ohlc)
-    MongoDB.insert_log(
-        log_type=LogType.TRADE,
-        message="Searching for exit",
-        details={
-            "symbol": holding["tradingsymbol"],
-            "exchange": holding["exchange"],
-            "quantity": holding["quantity"],
-            "ltp": ohlc[-1]["close"],
-            "exit_signal": signal,
-        },
-    )
-    MongoDB.holdings.update_many(
-        {"symbol": holding["tradingsymbol"]}, {"$set": {"ltp": ohlc[-1]["close"]}}
+    signal = strategy.get_exit_signal(kite, ohlc)
+    print(
+        f"[{dt.now()}] [{user.user_id}] [{holding['exchange']}:{holding['tradingsymbol']}]: Searching for exit - {signal}"
     )
     if not signal:
         return
@@ -171,26 +141,23 @@ def search_exit(holding):
 
     holding["to"] = str(ohlc[-1]["date"])
 
-    details = {"order_id": order_id, **holding}
-    if ku.get_order_status(str(order_id))["status"] == kite.STATUS_COMPLETE:
-        entry_signal_details = MongoDB.holdings.find_one(
-            {"symbol": holding["tradingsymbol"]}
-        )
-        holding.update(entry_signal_details)
-        MongoDB.holdings.delete_one({"symbol": holding["tradingsymbol"]})
-        MongoDB.trades.insert_one(holding)
+    details = {**user.to_dict(), "order_id": order_id, **holding}
+    if ku.get_order_status(kite, str(order_id))["status"] == kite.STATUS_COMPLETE:
         msg = "Order executed successfully"
-        MongoDB.insert_log(
-            log_type=LogType.SUCCESS,
-            message=msg,
-            details=details,
-        )
-        mail_app.send_order_status_email(details, msg)
     else:
         msg = "Order failed"
-        MongoDB.insert_log(
-            log_type=LogType.FAIL,
-            message=msg,
-            details=details,
-        )
-        mail_app.send_order_status_email(details, msg)
+    print(
+        f"[{dt.now()}] [{user.user_id}] [{holding['exchange']}:{holding['tradingsymbol']}]: {msg}"
+    )
+    mail_app.send_order_status_email(details, msg)
+
+
+def cancel_basket_scripts_orders(user: User, instrument_tokens: List[int]):
+    kite = user.kite
+    for o in kite.orders():
+        if o["instrument_token"] in (instrument_tokens) and o["status"] not in (
+            kite.STATUS_COMPLETE,
+            kite.STATUS_CANCELLED,
+            kite.STATUS_REJECTED,
+        ):
+            kite.cancel_order(o["variety"], o["order_id"])

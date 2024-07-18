@@ -18,8 +18,6 @@ import warnings
 
 from kiteconnect.__version__ import __version__, __title__
 import kiteconnect.exceptions as ex
-from db import MongoDB
-from constants import LogType
 
 log = logging.getLogger(__name__)
 
@@ -236,10 +234,6 @@ class KiteConnect(object):
         __cf_bm = two_res.cookies["__cf_bm"]
         public_token = two_res.cookies["public_token"]
         enctoken = two_res.cookies["enctoken"]
-        MongoDB.insert_log(
-            log_type=LogType.SUCCESS,
-            message="Login successful",
-        )
         return {
             "Authorization": "enctoken " + enctoken,
             "X-Csrftoken": public_token,
