@@ -10,7 +10,7 @@ from gsheet.environ import GOOGLE_SHEET_ENVIRON
 from utils import kite_utils as ku, market_utils as mu
 
 
-def search_trade_with_exception_handler(
+def search_trade(
     user: gusers.User, holding, symbol_details, trade_signal
 ):
     token = symbol_details["instrument_token"]
@@ -21,7 +21,6 @@ def search_trade_with_exception_handler(
         elif trade_signal == "EXIT":
             orders.search_exit(user, holding)
     except Exception as e:
-        user.set_kite_obj()
         print(
             f"[{dt.now()}] [{user.user_id}] [{symbol_details['exchange']}:{symbol_details['tradingsymbol']}]: {trade_signal}",
         )
@@ -64,7 +63,7 @@ def scan_single_user(
                 TRADE_SIGNAL = "ENTRY"
         if TRADE_SIGNAL:
             threading.Thread(
-                target=search_trade_with_exception_handler,
+                target=search_trade,
                 args=(user, holding, sd, TRADE_SIGNAL),
                 name=f"[{dt.now()}] [{user.user_id}] [{sd['exchange']}:{sd['tradingsymbol']}]: {TRADE_SIGNAL}",
             ).start()
