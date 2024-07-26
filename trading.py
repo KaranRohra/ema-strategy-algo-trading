@@ -90,7 +90,6 @@ def scan_users_basket(users):
 
 
 def start():
-    GOOGLE_SHEET_ENVIRON.set_environ()
     while mu.is_trading_time():
         try:
             users = gusers.get_or_update_users()
