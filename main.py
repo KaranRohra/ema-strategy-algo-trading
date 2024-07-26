@@ -1,7 +1,6 @@
 import dotenv
 
 dotenv.load_dotenv()
-# logging.basicConfig(format="[%(asctime)s]:[%(levelname)s] - %(message)s")
 
 import trading
 import time
@@ -26,7 +25,6 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"[{dt.now()}]: {e}")
             ma.send_error_email(e)
-            GOOGLE_SHEET_ENVIRON.set_environ()
             time.sleep(5)
 
     print(f"[{dt.now()}] Trading Stopped")
