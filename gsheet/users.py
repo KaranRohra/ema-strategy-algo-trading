@@ -1,4 +1,5 @@
 import pyotp
+import gspread
 
 from typing import List
 from utils.common import title_to_snake, time_str_to_curr_datetime
@@ -6,6 +7,7 @@ from gsheet import connection
 from kite.connect import KiteConnect
 from datetime import datetime as dt
 from constants import SheetIndex
+from mail import app as ma
 
 
 class User:
@@ -64,24 +66,30 @@ class User:
 
 def get_or_update_users(old_users: List[User] | None = None) -> List[User]:
     """Returns a list of users from the google sheet."""
-    worksheet = connection.get_sheet().get_worksheet(SheetIndex.USER)
-    values = worksheet.get_all_values()
-    headers = [title_to_snake(h) for h in values[0]]
+    try:
+        worksheet = connection.get_sheet().get_worksheet(SheetIndex.USER)
+        values = worksheet.get_all_values()
+        headers = [title_to_snake(h) for h in values[0]]
 
-    users: List[User] = []
-    for i in range(1, len(values)):
-        if len(values[i]) != len(headers):  # Row is incomplete, some values are missing
-            continue
-        user = {}
-        for j in range(len(headers)):
-            user[headers[j]] = values[i][j]
+        users: List[User] = []
+        for i in range(1, len(values)):
+            # Row is incomplete, some values are missing
+            if len(values[i]) != len(headers):
+                continue
+            user = {}
+            for j in range(len(headers)):
+                user[headers[j]] = values[i][j]
 
-        user_obj = User(**user)
-        if old_users:
-            user_obj.kite = old_users[i - 1].kite
-            old_users[i - 1] = user_obj
-        else:
-            user_obj.set_kite_obj()
-            users.append(user_obj)
+            user_obj = User(**user)
+            if old_users:
+                user_obj.kite = old_users[i - 1].kite
+                old_users[i - 1] = user_obj
+            else:
+                user_obj.set_kite_obj()
+                users.append(user_obj)
 
-    return old_users or users
+        return old_users or users
+    except gspread.exceptions.GSpreadException as e:
+        print(f"[{dt.now()}] [GOOGLE_SHEET_ERROR]: {e}")
+        ma.send_error_email(e)
+        return old_users or []
