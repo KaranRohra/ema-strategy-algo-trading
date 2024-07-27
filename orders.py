@@ -23,6 +23,21 @@ def place_entry_order(user: User, order_details, holding, instrument_token):
         f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Waiting for High/Low Break"
     )
 
+    def is_risk_managed():
+        # Don't take trade if loss is higher than risk_amount
+        risk_qty = common.get_risk_managed_qty(
+            order_details["price"], holding["ema200"], user.risk_amount
+        )
+        if risk_qty < holding["quantity"]:
+            print(
+                f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Risk is higher than Risk Amount"
+            )
+            return False
+        return True
+
+    if not is_risk_managed():
+        return
+
     while now < valid_till:
         ohlc = ku.get_ohlc(kite, instrument_token)
         if (
@@ -47,14 +62,7 @@ def place_entry_order(user: User, order_details, holding, instrument_token):
         print(f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: {msg}")
         return
 
-    # Don't take trade if loss is higher than risk_amount
-    risk_qty = common.get_risk_managed_qty(
-        order_details["price"], holding["ema200"], user.risk_amount
-    )
-    if risk_qty < holding["quantity"]:
-        print(
-            f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Risk is higher than Risk Amount"
-        )
+    if not is_risk_managed():
         return
     order_id = kite.place_order(**order_details)
     msg = "Order placed successfully"
