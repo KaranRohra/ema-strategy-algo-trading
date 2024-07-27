@@ -1,5 +1,6 @@
 import pyotp
 import gspread
+import time
 
 from typing import List
 from utils.common import title_to_snake, time_str_to_curr_datetime
@@ -36,6 +37,7 @@ class User:
         self.risk_amount: int = int(risk_amount)
 
     def set_kite_obj(self):
+        time.sleep(5)
         self.kite: KiteConnect = KiteConnect(
             user_id=self.user_id,
             password=self._password,
