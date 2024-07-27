@@ -19,9 +19,6 @@ def place_entry_order(user: User, order_details, holding, instrument_token):
     end_seconds = (wait_time * 10) % 10
     wait_seconds = end_minutes * 60
     valid_till = now + td(minutes=end_minutes, seconds=end_seconds)
-    print(
-        f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Waiting for High/Low Break"
-    )
 
     def is_risk_managed():
         # Don't take trade if loss is higher than risk_amount
@@ -38,6 +35,9 @@ def place_entry_order(user: User, order_details, holding, instrument_token):
     if not is_risk_managed():
         return
 
+    print(
+        f"[{dt.now()}] [{user.user_id}] [{exchange}:{symbol}]: Waiting for High/Low Break"
+    )
     while now < valid_till:
         ohlc = ku.get_ohlc(kite, instrument_token)
         if (

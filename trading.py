@@ -22,7 +22,7 @@ def search_trade(
             orders.search_exit(user, holding)
     except Exception as e:
         print(
-            f"[{dt.now()}] [{user.user_id}] [{symbol_details['exchange']}:{symbol_details['tradingsymbol']}]: {trade_signal}",
+            f"[{dt.now()}] [{user.user_id}] [{symbol_details['exchange']}:{symbol_details['tradingsymbol']}]: {e}",
         )
         ma.send_error_email(e)
     finally:
@@ -90,15 +90,16 @@ def scan_users_basket(users):
 
 
 def start():
-    while mu.is_trading_time():
+    while True:
         try:
+            GOOGLE_SHEET_ENVIRON.set_environ()
             users = gusers.get_or_update_users()
             schedule.every().minute.at(":00").do(scan_users_basket, users)
             while mu.is_trading_time():
                 schedule.run_pending()
                 time.sleep(1)
+            break
         except Exception as e:
             print(f"[{dt.now()}]: {e}")
             ma.send_error_email(e)
-            GOOGLE_SHEET_ENVIRON.set_environ()
             time.sleep(5)
