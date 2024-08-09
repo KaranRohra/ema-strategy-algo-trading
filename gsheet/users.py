@@ -37,7 +37,9 @@ class User:
         self.risk_amount: int = int(risk_amount)
 
     def set_kite_obj(self):
-        time.sleep(5)
+        now = dt.now()
+        while not (now.second > 3 and now.second < 20):
+            now = dt.now()
         self.kite: KiteConnect = KiteConnect(
             user_id=self.user_id,
             password=self._password,
