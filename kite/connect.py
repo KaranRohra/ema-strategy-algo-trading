@@ -223,7 +223,7 @@ class KiteConnect(object):
         two_res = requests.post(
             url=urljoin(self._default_root_uri, self._routes["api.twofa"]),
             data={
-                "user_id": "AXN756",
+                "user_id": user_id,
                 "request_id": res.json()["data"]["request_id"],
                 "twofa_value": two_fa,
                 "twofa_type": "totp",
